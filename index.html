@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>幻想紅月夜 Ver.3.1</title>
+<title>幻想紅月夜 Ver.3.2</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#080817;color:white;font-family:sans-serif;overflow:hidden;touch-action:none}
@@ -32,7 +32,7 @@ button.selected{background:#2586bd;border:2px solid white}
 <body>
 
 <div id="hud">
- <div>幻想紅月夜 Ver.3.1</div>
+ <div>幻想紅月夜 Ver.3.2</div>
  <div>PLAYER : ディフェンダー</div>
  <div id="score">SCORE : 0</div>
  <div id="life">LIFE : 3</div>
@@ -50,7 +50,7 @@ button.selected{background:#2586bd;border:2px solid white}
 
 <div id="overlay">
  <h1>幻想紅月夜</h1>
- <h2>紅月弾幕録 Ver.3.1</h2>
+ <h2>紅月弾幕録 Ver.3.2</h2>
  <p>氷の守護者、出撃。</p>
 
  <div id="menu">
@@ -127,25 +127,31 @@ resize();
 
 // ===================================
 // 画像読み込み
+// defender_back.png は背面キャラ単体の画像
 // ===================================
 
 const defenderImage=new Image();
-defenderImage.src="defender.png";
+defenderImage.src="defender_back.png";
 
 let spriteCanvas=document.createElement("canvas");
 let spriteReady=false;
 
 defenderImage.onload=function(){
- const sw=Math.floor(defenderImage.width/2);
+ // 画像全体を使用する（左右分割しない）
+ const sw=defenderImage.width;
  const sh=defenderImage.height;
+
  if(sw<=0||sh<=0)return;
 
  spriteCanvas.width=sw;
  spriteCanvas.height=sh;
 
  const sctx=spriteCanvas.getContext("2d",{willReadFrequently:true});
- sctx.drawImage(defenderImage,0,0,sw,sh,0,0,sw,sh);
 
+ sctx.clearRect(0,0,sw,sh);
+ sctx.drawImage(defenderImage,0,0);
+
+ // 白い背景が残っている場合は透明化
  const imageData=sctx.getImageData(0,0,sw,sh);
  const data=imageData.data;
 
@@ -160,7 +166,7 @@ defenderImage.onload=function(){
 };
 
 defenderImage.onerror=function(){
- console.log("defender.pngを読み込めませんでした。");
+ console.log("defender_back.pngを読み込めませんでした。");
 };
 
 // ===================================
@@ -191,7 +197,7 @@ function showPanel(panel){
 function showTitle(){
  showPanel(menu);
  overlay.classList.remove("hidden");
- document.querySelector("#menu h2").textContent="紅月弾幕録 Ver.3.1";
+ document.querySelector("#menu h2").textContent="紅月弾幕録 Ver.3.2";
  document.querySelector("#menu p").textContent="氷の守護者、出撃。";
  document.getElementById("newGame").textContent="GAME START";
 }
@@ -878,9 +884,22 @@ function drawPlayer(){
  if(spriteReady){
   const sw=spriteCanvas.width;
   const sh=spriteCanvas.height;
+
+  // 画像の縦横比を維持して、指定サイズ内に収める
+  const maxWidth=48;
+  const maxHeight=88;
+  const scale=Math.min(maxWidth/sw,maxHeight/sh);
+
+  const drawW=sw*scale;
+  const drawH=sh*scale;
+
   ctx.drawImage(
-   spriteCanvas,0,0,sw,sh,
-   player.x-29,player.y-47,58,94
+   spriteCanvas,
+   0,0,sw,sh,
+   player.x-drawW/2,
+   player.y-drawH/2,
+   drawW,
+   drawH
   );
  }else{
   ctx.fillStyle="#222";
@@ -888,6 +907,7 @@ function drawPlayer(){
   ctx.fillStyle="#59d9ff";
   ctx.fillRect(player.x-7,player.y-12,14,24);
  }
+
  ctx.restore();
 
  ctx.beginPath();
