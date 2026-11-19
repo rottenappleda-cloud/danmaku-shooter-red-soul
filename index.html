@@ -4,580 +4,386 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>ReMindER RAGE</title>
-
+<title>紅月弾幕録 Ver.2</title>
 <style>
-* { box-sizing:border-box; }
-
-body {
-  margin:0;
-  background:#080817;
-  color:white;
-  font-family:sans-serif;
-  overflow:hidden;
-  touch-action:none;
+*{box-sizing:border-box}
+body{
+ margin:0;background:#080817;color:white;
+ font-family:sans-serif;overflow:hidden;touch-action:none
 }
-
-#game {
-  display:block;
-  width:100vw;
-  height:100dvh;
-  background:#10102b;
-  touch-action:none;
+canvas{width:100vw;height:100dvh;display:block;touch-action:none}
+#info{position:fixed;top:8px;left:10px;z-index:2;font-size:14px;pointer-events:none;text-shadow:0 1px 4px black}
+#stick{
+ position:fixed;width:116px;height:116px;left:25px;bottom:35px;
+ border:2px solid #aaa8;border-radius:50%;background:#ffffff18;
+ z-index:3;touch-action:none
 }
-
-#info {
-  position:fixed;
-  top:8px;
-  left:10px;
-  z-index:2;
-  pointer-events:none;
-  font-size:14px;
-  text-shadow:0 1px 4px black;
+#knob{
+ position:absolute;width:42px;height:42px;left:35px;top:35px;
+ border-radius:50%;background:#b8caffbb;border:2px solid white
 }
-
-#stick {
-  position:fixed;
-  width:116px;
-  height:116px;
-  left:25px;
-  bottom:35px;
-  border:2px solid #aaa8;
-  border-radius:50%;
-  background:#ffffff18;
-  z-index:3;
-  touch-action:none;
+#bomb{
+ position:fixed;right:25px;bottom:50px;width:85px;height:85px;
+ border-radius:50%;background:#bd315caa;border:2px solid white;
+ color:white;font-size:15px;z-index:3;touch-action:none
 }
-
-#knob {
-  position:absolute;
-  width:42px;
-  height:42px;
-  left:35px;
-  top:35px;
-  border-radius:50%;
-  background:#b8caffbb;
-  border:2px solid white;
+#start{
+ position:fixed;inset:0;display:flex;align-items:center;
+ justify-content:center;flex-direction:column;
+ background:#080817ee;z-index:5;text-align:center
 }
-
-#start {
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  flex-direction:column;
-  background:#080817dd;
-  z-index:5;
-  text-align:center;
+button{cursor:pointer}
+#startButton{
+ background:#bd315c;color:white;border:0;border-radius:12px;
+ padding:14px 35px;font-size:20px
 }
-
-button {
-  background:#bd315c;
-  color:white;
-  border:0;
-  border-radius:12px;
-  padding:14px 35px;
-  font-size:20px;
-}
-
 </style>
 </head>
-
 <body>
 
 <div id="info">
-  <div>ReMindEr RAGE</div>
-  <div id="score">SCORE : 0</div>
-  <div id="life">LIFE : 3</div>
+ <div>紅月弾幕録 Ver.2</div>
+ <div id="score">SCORE : 0</div>
+ <div id="life">LIFE : 3</div>
+ <div id="bombs">BOMB : 3</div>
+ <div id="bossInfo" style="display:none">BOSS</div>
 </div>
 
 <canvas id="game"></canvas>
 
-<div id="stick">
-  <div id="knob"></div>
-</div>
+<div id="stick"><div id="knob"></div></div>
+<button id="bomb">BOMB</button>
 
 <div id="start">
-  <h1>ReMindEr RAGE</h1>
-  <p>弾幕シューティング</p>
-  <p>ジョイスティック・WASD・矢印キー対応</p>
-  <button id="startButton">GAME START</button>
+ <h1>紅月弾幕録</h1>
+ <p>WASD・矢印キーで移動</p>
+ <p>Shift：低速移動 / X：ボム</p>
+ <button id="startButton">GAME START</button>
 </div>
 
 <script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-
-let W,H;
-let running = false;
-let score = 0;
-let life = 3;
-let frame = 0;
-
-let player;
-let bullets = [];
-let enemyBullets = [];
-let enemies = [];
+let W,H,frame=0,score=0,life=3,bombs=3;
+let running=false,boss=null,bossSpawned=false;
+let player,bullets=[],enemyBullets=[],enemies=[],effects=[];
+const keys={};
 
 function resize(){
-  const dpr = Math.min(devicePixelRatio || 1,2);
-  W = innerWidth;
-  H = innerHeight;
-
-  canvas.width = W*dpr;
-  canvas.height = H*dpr;
-
-  ctx.setTransform(dpr,0,0,dpr,0,0);
+ const d=Math.min(devicePixelRatio||1,2);
+ W=innerWidth;H=innerHeight;
+ canvas.width=W*d;canvas.height=H*d;
+ ctx.setTransform(d,0,0,d,0,0);
 }
-
 addEventListener("resize",resize);
 resize();
 
-player = {
-  x:W/2,
-  y:H*0.78,
-  r:9,
-  speed:4,
-  inv:0
-};
+player={x:W/2,y:H*.78,r:9,inv:0};
 
-// ======================
-// キーボード操作
-// ======================
-
-const keys = {};
-
-window.addEventListener("keydown",e=>{
-  const key=e.key.toLowerCase();
-
-  if([
-    "arrowup","arrowdown",
-    "arrowleft","arrowright"," "
-  ].includes(key)){
-    e.preventDefault();
-  }
-
-  keys[key]=true;
+addEventListener("keydown",e=>{
+ const k=e.key.toLowerCase();
+ if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k))e.preventDefault();
+ keys[k]=true;
 });
+addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+addEventListener("blur",()=>Object.keys(keys).forEach(k=>keys[k]=false));
 
-window.addEventListener("keyup",e=>{
-  keys[e.key.toLowerCase()]=false;
-});
-
-window.addEventListener("blur",()=>{
-  Object.keys(keys).forEach(k=>keys[k]=false);
-});
-
-// ======================
-// ジョイスティック
-// ======================
-
-let joyX=0;
-let joyY=0;
-let pointer=null;
-
+let joyX=0,joyY=0,pointer=null;
 const stick=document.getElementById("stick");
 const knob=document.getElementById("knob");
 
 function joystick(e){
-  const rect=stick.getBoundingClientRect();
-
-  const cx=rect.left+rect.width/2;
-  const cy=rect.top+rect.height/2;
-
-  let dx=e.clientX-cx;
-  let dy=e.clientY-cy;
-
-  const len=Math.hypot(dx,dy);
-  const max=39;
-
-  if(len>max){
-    dx=dx/len*max;
-    dy=dy/len*max;
-  }
-
-  joyX=dx/max;
-  joyY=dy/max;
-
-  knob.style.left=(35+dx)+"px";
-  knob.style.top=(35+dy)+"px";
+ const r=stick.getBoundingClientRect();
+ let dx=e.clientX-(r.left+r.width/2);
+ let dy=e.clientY-(r.top+r.height/2);
+ const len=Math.hypot(dx,dy),max=39;
+ if(len>max){dx=dx/len*max;dy=dy/len*max}
+ joyX=dx/max;joyY=dy/max;
+ knob.style.left=35+dx+"px";
+ knob.style.top=35+dy+"px";
 }
-
 stick.addEventListener("pointerdown",e=>{
-  pointer=e.pointerId;
-  stick.setPointerCapture(pointer);
-  joystick(e);
+ pointer=e.pointerId;stick.setPointerCapture(pointer);joystick(e);
 });
-
 stick.addEventListener("pointermove",e=>{
-  if(e.pointerId===pointer) joystick(e);
+ if(e.pointerId===pointer)joystick(e);
 });
-
 function resetJoy(){
-  pointer=null;
-  joyX=0;
-  joyY=0;
-  knob.style.left="35px";
-  knob.style.top="35px";
+ pointer=null;joyX=0;joyY=0;
+ knob.style.left="35px";knob.style.top="35px";
 }
-
 stick.addEventListener("pointerup",resetJoy);
 stick.addEventListener("pointercancel",resetJoy);
 
-// ======================
-// ショット
-// ======================
-
-function shoot(){
-  bullets.push({
-    x:player.x,
-    y:player.y-12,
-    vx:0,
-    vy:-9,
-    r:4
-  });
+function circle(x,y,r,color){
+ ctx.fillStyle=color;
+ ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
 }
 
-// ======================
-// 敵弾
-// ======================
-
-function enemyShot(x,y,angle,speed){
-  enemyBullets.push({
-    x,y,
-    vx:Math.cos(angle)*speed,
-    vy:Math.sin(angle)*speed,
-    r:5
-  });
+function shot(){
+ bullets.push({x:player.x-6,y:player.y-12,vy:-10});
+ bullets.push({x:player.x+6,y:player.y-12,vy:-10});
 }
 
-// ======================
-// 弾幕パターン
-// ======================
-
-function enemyPattern(enemy){
-
-  // 円形弾幕
-  if(frame%65===0){
-    for(let i=0;i<12;i++){
-      enemyShot(
-        enemy.x,
-        enemy.y,
-        i*Math.PI*2/12,
-        2.1
-      );
-    }
-  }
-
-  // 狙い撃ち弾幕
-  if(frame%110===0){
-    const a=Math.atan2(
-      player.y-enemy.y,
-      player.x-enemy.x
-    );
-
-    for(let i=-2;i<=2;i++){
-      enemyShot(
-        enemy.x,
-        enemy.y,
-        a+i*0.17,
-        2.8
-      );
-    }
-  }
+function enemyShot(x,y,a,s,r=5){
+ enemyBullets.push({
+  x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r
+ });
 }
-
-// ======================
-// 敵の出現
-// ======================
 
 function spawnEnemy(){
-  enemies.push({
-    x:40+Math.random()*(W-80),
-    y:-20,
-    r:17,
-    hp:3,
-    vy:1.2,
-    type:Math.random()<0.5?0:1
-  });
+ enemies.push({
+  x:35+Math.random()*(W-70),y:-20,
+  hp:3,vy:1.3,r:16
+ });
 }
 
-// ======================
-// 自機の描画
-// ======================
+function spawnBoss(){
+ boss={
+  x:W/2,y:100,hp:180,maxHp:180,
+  dir:1,r:32,attack:0
+ };
+ bossSpawned=true;
+ document.getElementById("bossInfo").style.display="block";
+}
+
+function bossPattern(){
+ if(!boss)return;
+ boss.attack++;
+
+ if(boss.attack%48===0){
+  for(let i=0;i<18;i++){
+   enemyShot(
+    boss.x,boss.y,
+    i*Math.PI*2/18+boss.attack*.025,
+    2.0
+   );
+  }
+ }
+
+ if(boss.attack%90===0){
+  const a=Math.atan2(player.y-boss.y,player.x-boss.x);
+  for(let i=-3;i<=3;i++){
+   enemyShot(boss.x,boss.y,a+i*.13,2.8);
+  }
+ }
+
+ boss.x+=boss.dir*1.5;
+ if(boss.x>W-45||boss.x<45)boss.dir*=-1;
+}
+
+function useBomb(){
+ if(!running||bombs<=0)return;
+ bombs--;
+
+ enemyBullets=[];
+ enemies.forEach(e=>{
+  e.hp-=5;
+  if(e.hp<=0)score+=100;
+ });
+ enemies=enemies.filter(e=>e.hp>0);
+
+ if(boss){
+  boss.hp-=35;
+  if(boss.hp<=0)defeatBoss();
+ }
+
+ effects.push({x:player.x,y:player.y,r:10,alpha:1});
+}
+
+function defeatBoss(){
+ score+=5000;
+ boss=null;
+ document.getElementById("bossInfo").style.display="none";
+ enemyBullets=[];
+}
+
+document.getElementById("bomb").addEventListener("pointerdown",e=>{
+ e.preventDefault();useBomb();
+});
 
 function drawPlayer(){
+ ctx.save();
+ ctx.translate(player.x,player.y);
 
-  ctx.save();
-  ctx.translate(player.x,player.y);
+ ctx.fillStyle="#b8e8ff";
+ ctx.beginPath();
+ ctx.moveTo(0,-15);ctx.lineTo(-11,12);
+ ctx.lineTo(0,7);ctx.lineTo(11,12);
+ ctx.closePath();ctx.fill();
 
-  ctx.fillStyle="#b8e8ff";
+ circle(0,0,4,"#ff6688");
 
-  ctx.beginPath();
-  ctx.moveTo(0,-15);
-  ctx.lineTo(-11,12);
-  ctx.lineTo(0,7);
-  ctx.lineTo(11,12);
-  ctx.closePath();
-  ctx.fill();
+ // 当たり判定
+ circle(0,0,2.5,"#ffffff");
 
-  ctx.fillStyle="#ff6688";
-
-  ctx.beginPath();
-  ctx.arc(0,0,4,0,Math.PI*2);
-  ctx.fill();
-
-  ctx.restore();
+ if(keys["shift"]){
+  ctx.strokeStyle="#ffffff";
+  ctx.beginPath();ctx.arc(0,0,7,0,Math.PI*2);ctx.stroke();
+ }
+ ctx.restore();
 }
-
-// ======================
-// 円の描画
-// ======================
-
-function circle(x,y,r,color){
-  ctx.fillStyle=color;
-  ctx.beginPath();
-  ctx.arc(x,y,r,0,Math.PI*2);
-  ctx.fill();
-}
-
-// ======================
-// ゲーム更新
-// ======================
 
 function update(){
+ if(!running)return;
+ frame++;
 
-  if(!running)return;
+ let kx=0,ky=0;
+ if(keys["arrowleft"]||keys["a"])kx--;
+ if(keys["arrowright"]||keys["d"])kx++;
+ if(keys["arrowup"]||keys["w"])ky--;
+ if(keys["arrowdown"]||keys["s"])ky++;
 
-  frame++;
+ let mx=joyX+kx,my=joyY+ky;
+ let len=Math.hypot(mx,my);
+ if(len>1){mx/=len;my/=len}
 
-  // キーボード入力
-  let kx=0;
-  let ky=0;
+ const speed=keys["shift"]?1.8:4;
+ player.x+=mx*speed;
+ player.y+=my*speed;
 
-  if(keys["arrowleft"]||keys["a"])kx--;
-  if(keys["arrowright"]||keys["d"])kx++;
-  if(keys["arrowup"]||keys["w"])ky--;
-  if(keys["arrowdown"]||keys["s"])ky++;
+ player.x=Math.max(15,Math.min(W-15,player.x));
+ player.y=Math.max(25,Math.min(H-25,player.y));
 
-  // ジョイスティックとの合成
-  let mx=joyX+kx;
-  let my=joyY+ky;
+ if(frame%9===0)shot();
+ if(frame%100===0&&!boss)spawnEnemy();
 
-  // 斜め移動の速度調整
-  const len=Math.hypot(mx,my);
+ if(frame===1200&&!bossSpawned)spawnBoss();
 
-  if(len>1){
-    mx/=len;
-    my/=len;
+ bullets.forEach(b=>b.y+=b.vy);
+ enemies.forEach(e=>e.y+=e.vy);
+
+ enemies.forEach(e=>{
+  if(frame%75===0){
+   const a=Math.atan2(player.y-e.y,player.x-e.x);
+   for(let i=-2;i<=2;i++)
+    enemyShot(e.x,e.y,a+i*.18,2.2);
+  }
+ });
+
+ bossPattern();
+
+ enemyBullets.forEach(b=>{
+  b.x+=b.vx;b.y+=b.vy;
+ });
+
+ for(let i=bullets.length-1;i>=0;i--){
+  const b=bullets[i];
+  let hit=false;
+
+  for(let j=enemies.length-1;j>=0;j--){
+   const e=enemies[j];
+   if(Math.hypot(b.x-e.x,b.y-e.y)<e.r+4){
+    e.hp--;hit=true;
+    if(e.hp<=0){enemies.splice(j,1);score+=100}
+    break;
+   }
   }
 
-  player.x+=mx*player.speed;
-  player.y+=my*player.speed;
-
-  player.x=Math.max(15,Math.min(W-15,player.x));
-  player.y=Math.max(25,Math.min(H-25,player.y));
-
-  // 自動ショット
-  if(frame%9===0)shoot();
-
-  // 敵出現
-  if(frame%95===0)spawnEnemy();
-
-  // 自機弾
-  bullets.forEach(b=>{
-    b.x+=b.vx;
-    b.y+=b.vy;
-  });
-
-  // 敵移動
-  enemies.forEach(e=>{
-    e.y+=e.vy;
-
-    if(e.type===1){
-      enemyPattern(e);
-    }
-  });
-
-  // 敵弾移動
-  enemyBullets.forEach(b=>{
-    b.x+=b.vx;
-    b.y+=b.vy;
-  });
-
-  // 自機弾と敵の当たり判定
-  for(let i=bullets.length-1;i>=0;i--){
-
-    const b=bullets[i];
-
-    for(let j=enemies.length-1;j>=0;j--){
-
-      const e=enemies[j];
-
-      if(Math.hypot(b.x-e.x,b.y-e.y)<b.r+e.r){
-
-        bullets.splice(i,1);
-        e.hp--;
-
-        if(e.hp<=0){
-          enemies.splice(j,1);
-          score+=100;
-        }
-
-        break;
-      }
-    }
+  if(!hit&&boss&&Math.hypot(b.x-boss.x,b.y-boss.y)<boss.r+5){
+   boss.hp-=1;hit=true;
+   if(boss.hp<=0)defeatBoss();
   }
 
-  // 被弾判定
-  if(player.inv>0)player.inv--;
+  if(hit)bullets.splice(i,1);
+ }
 
-  for(let i=enemyBullets.length-1;i>=0;i--){
+ if(player.inv>0)player.inv--;
 
-    const b=enemyBullets[i];
-
-    if(
-      Math.hypot(b.x-player.x,b.y-player.y)
-      <b.r+player.r &&
-      player.inv<=0
-    ){
-
-      enemyBullets.splice(i,1);
-
-      life--;
-      player.inv=90;
-
-      if(life<=0)gameOver();
-
-      break;
-    }
+ for(let i=enemyBullets.length-1;i>=0;i--){
+  const b=enemyBullets[i];
+  if(Math.hypot(b.x-player.x,b.y-player.y)<b.r+3&&player.inv<=0){
+   enemyBullets.splice(i,1);
+   life--;player.inv=90;
+   if(life<=0)gameOver();
+   break;
   }
+ }
 
-  bullets=bullets.filter(b=>b.y>-20);
+ bullets=bullets.filter(b=>b.y>-20);
+ enemyBullets=enemyBullets.filter(b=>
+  b.y<H+20&&b.x>-20&&b.x<W+20
+ );
+ enemies=enemies.filter(e=>e.y<H+30);
 
-  enemyBullets=enemyBullets.filter(b=>
-    b.y<H+20&&b.x>-20&&b.x<W+20
-  );
+ effects.forEach(e=>{
+  e.r+=8;e.alpha-=.04;
+ });
+ effects=effects.filter(e=>e.alpha>0);
 
-  enemies=enemies.filter(e=>e.y<H+30);
-
-  document.getElementById("score").textContent=
-    "SCORE : "+score;
-
-  document.getElementById("life").textContent=
-    "LIFE : "+life;
+ document.getElementById("score").textContent="SCORE : "+score;
+ document.getElementById("life").textContent="LIFE : "+life;
+ document.getElementById("bombs").textContent="BOMB : "+bombs;
 }
-
-// ======================
-// 画面描画
-// ======================
 
 function draw(){
+ ctx.fillStyle="#10102b";
+ ctx.fillRect(0,0,W,H);
 
-  ctx.clearRect(0,0,W,H);
+ for(let i=0;i<40;i++){
+  circle((i*83)%W,(i*137+frame*.5)%H,1,"#ffffff55");
+ }
 
-  ctx.fillStyle="#10102b";
-  ctx.fillRect(0,0,W,H);
+ bullets.forEach(b=>circle(b.x,b.y,4,"#8df5ff"));
 
-  // 星空
-  for(let i=0;i<35;i++){
+ enemyBullets.forEach(b=>{
+  circle(b.x,b.y,b.r,"#ff648f");
+  circle(b.x,b.y,2,"white");
+ });
 
-    let x=(i*83)%W;
-    let y=(i*137+frame*0.5)%H;
+ enemies.forEach(e=>{
+  circle(e.x,e.y,e.r,"#bd79ff");
+  circle(e.x,e.y,6,"white");
+ });
 
-    circle(x,y,1,"#ffffff55");
-  }
+ if(boss){
+  circle(boss.x,boss.y,boss.r,"#ff477f");
+  circle(boss.x,boss.y,15,"#fff0f5");
 
-  // 自機弾
-  bullets.forEach(b=>
-    circle(b.x,b.y,b.r,"#8df5ff")
-  );
+  ctx.fillStyle="#333";
+  ctx.fillRect(15,42,W-30,10);
+  ctx.fillStyle="#ff3c68";
+  ctx.fillRect(15,42,(W-30)*Math.max(0,boss.hp)/boss.maxHp,10);
+ }
 
-  // 敵弾
-  enemyBullets.forEach(b=>{
-    circle(b.x,b.y,b.r,"#ff648f");
-    circle(b.x,b.y,2,"#fff");
-  });
+ effects.forEach(e=>{
+  ctx.globalAlpha=e.alpha;
+  ctx.strokeStyle="#ffe6a1";
+  ctx.lineWidth=5;
+  ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.stroke();
+  ctx.globalAlpha=1;
+ });
 
-  // 敵
-  enemies.forEach(e=>{
-    circle(
-      e.x,e.y,e.r,
-      e.type===0?"#bd79ff":"#ff527a"
-    );
-
-    circle(e.x,e.y,6,"#fff");
-  });
-
-  // 自機
-  if(player.inv<=0||Math.floor(frame/5)%2===0){
-    drawPlayer();
-  }
+ if(player.inv<=0||Math.floor(frame/5)%2===0)drawPlayer();
 }
-
-// ======================
-// メインループ
-// ======================
-
-function loop(){
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
-
-// ======================
-// ゲームオーバー
-// ======================
 
 function gameOver(){
-
-  running=false;
-
-  document.getElementById("start").style.display="flex";
-
-  document.querySelector("#start h1").textContent="GAME OVER";
-
-  document.querySelector("#start p").textContent=
-    "SCORE : "+score;
-
-  document.getElementById("startButton").textContent="RETRY";
+ running=false;
+ document.getElementById("start").style.display="flex";
+ document.querySelector("#start h1").textContent="GAME OVER";
+ document.querySelector("#start p").textContent="SCORE : "+score;
+ document.getElementById("startButton").textContent="RETRY";
 }
 
-// ======================
-// スタート
-// ======================
+function loop(){
+ update();draw();
+ requestAnimationFrame(loop);
+}
 
 document.getElementById("startButton").onclick=()=>{
-
-  score=0;
-  life=3;
-  frame=0;
-
-  bullets=[];
-  enemyBullets=[];
-  enemies=[];
-
-  player={
-    x:W/2,
-    y:H*0.78,
-    r:9,
-    speed:4,
-    inv:0
-  };
-
-  resetJoy();
-
-  Object.keys(keys).forEach(k=>keys[k]=false);
-
-  running=true;
-
-  document.getElementById("start").style.display="none";
+ score=0;life=3;bombs=3;frame=0;
+ bullets=[];enemyBullets=[];enemies=[];effects=[];
+ boss=null;bossSpawned=false;
+ player={x:W/2,y:H*.78,r:9,inv:0};
+ resetJoy();
+ Object.keys(keys).forEach(k=>keys[k]=false);
+ document.getElementById("bossInfo").style.display="none";
+ running=true;
+ document.getElementById("start").style.display="none";
 };
 
 loop();
-
 </script>
 </body>
 </html>
