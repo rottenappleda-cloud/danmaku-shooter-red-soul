@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>紅月弾幕録</title>
+<style>
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  background:#080817;
+  color:white;
+  font-family:sans-serif;
+  overflow:hidden;
+  touch-action:none;
+}
+#game {
+  display:block;
+  width:100vw;
+  height:100dvh;
+  margin:auto;
+  background:#10102b;
+  touch-action:none;
+}
+#info {
+  position:fixed;
+  top:8px;
+  left:10px;
+  z-index:2;
+  pointer-events:none;
+  font-size:14px;
+  text-shadow:0 1px 4px black;
+}
+#stick {
+  position:fixed;
+  width:116px;
+  height:116px;
+  left:25px;
+  bottom:35px;
+  border:2px solid #aaa8;
+  border-radius:50%;
+  background:#ffffff18;
+  z-index:3;
+  touch-action:none;
+}
+#knob {
+  position:absolute;
+  width:42px;
+  height:42px;
+  left:35px;
+  top:35px;
+  border-radius:50%;
+  background:#b8caffbb;
+  border:2px solid white;
+}
+#start {
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  background:#080817dd;
+  z-index:5;
+  text-align:center;
+}
+button {
+  background:#bd315c;
+  color:white;
+  border:0;
+  border-radius:12px;
+  padding:14px 35px;
+  font-size:20px;
+}
+</style>
+</head>
+<body>
+
+<div id="info">
+  <div>紅月弾幕録</div>
+  <div id="score">SCORE : 0</div>
+  <div id="life">LIFE : 3</div>
+</div>
+
+<canvas id="game"></canvas>
+
+<div id="stick"><div id="knob"></div></div>
+
+<div id="start">
+  <h1>紅月弾幕録</h1>
+  <p>オリジナル弾幕シューティング</p>
+  <p>ジョイスティックで移動！</p>
+  <button id="startButton">GAME START</button>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let W,H;
+let running = false;
+let score = 0;
+let life = 3;
+let frame = 0;
+let player, bullets, enemyBullets, enemies, particles;
+
+function resize(){
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth;
+  H = innerHeight;
+  canvas.width = W*dpr;
+  canvas.height = H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener("resize",resize);
+resize();
+
+player = {x:W/2,y:H*0.78,r:9,speed:4,inv:0};
+bullets=[];
+enemyBullets=[];
+enemies=[];
+particles=[];
+
+let joyX=0,joyY=0;
+let pointer=null;
+
+const stick=document.getElementById("stick");
+const knob=document.getElementById("knob");
+
+function joystick(e){
+  const rect=stick.getBoundingClientRect();
+  const cx=rect.left+rect.width/2;
+  const cy=rect.top+rect.height/2;
+  let dx=e.clientX-cx;
+  let dy=e.clientY-cy;
+  const len=Math.hypot(dx,dy);
+  const max=39;
+  if(len>max){dx=dx/len*max;dy=dy/len*max;}
+  joyX=dx/max;
+  joyY=dy/max;
+  knob.style.left=(35+dx)+"px";
+  knob.style.top=(35+dy)+"px";
+}
+
+stick.addEventListener("pointerdown",e=>{
+  pointer=e.pointerId;
+  stick.setPointerCapture(pointer);
+  joystick(e);
+});
+stick.addEventListener("pointermove",e=>{
+  if(e.pointerId===pointer) joystick(e);
+});
+function resetJoy(){
+  pointer=null;
+  joyX=joyY=0;
+  knob.style.left="35px";
+  knob.style.top="35px";
+}
+stick.addEventListener("pointerup",resetJoy);
+stick.addEventListener("pointercancel",resetJoy);
+
+function shoot(){
+  bullets.push({x:player.x,y:player.y-12,vx:0,vy:-9,r:4});
+}
+
+function enemyShot(x,y,angle,speed){
+  enemyBullets.push({
+    x,y,
+    vx:Math.cos(angle)*speed,
+    vy:Math.sin(angle)*speed,
+    r:5
+  });
+}
+
+function enemyPattern(enemy){
+  if(frame%65===0){
+    for(let i=0;i<12;i++){
+      enemyShot(
+        enemy.x,enemy.y,
+        i*Math.PI*2/12,
+        2.1
+      );
+    }
+  }
+
+  if(frame%110===0){
+    const a=Math.atan2(player.y-enemy.y,player.x-enemy.x);
+    for(let i=-2;i<=2;i++){
+      enemyShot(enemy.x,enemy.y,a+i*0.17,2.8);
+    }
+  }
+}
+
+function spawnEnemy(){
+  enemies.push({
+    x:40+Math.random()*(W-80),
+    y:-20,
+    r:17,
+    hp:3,
+    vy:1.2,
+    type:Math.random()<0.5?0:1
+  });
+}
+
+function drawPlayer(){
+  ctx.save();
+  ctx.translate(player.x,player.y);
+
+  ctx.fillStyle="#b8e8ff";
+  ctx.beginPath();
+  ctx.moveTo(0,-15);
+  ctx.lineTo(-11,12);
+  ctx.lineTo(0,7);
+  ctx.lineTo(11,12);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle="#ff6688";
+  ctx.beginPath();
+  ctx.arc(0,0,4,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function circle(x,y,r,color){
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fill();
+}
+
+function update(){
+  if(!running)return;
+
+  frame++;
+
+  player.x+=joyX*player.speed;
+  player.y+=joyY*player.speed;
+  player.x=Math.max(15,Math.min(W-15,player.x));
+  player.y=Math.max(25,Math.min(H-25,player.y));
+
+  if(frame%9===0)shoot();
+  if(frame%95===0)spawnEnemy();
+
+  bullets.forEach(b=>{
+    b.x+=b.vx;b.y+=b.vy;
+  });
+
+  enemies.forEach(e=>{
+    e.y+=e.vy;
+    if(e.type===1)enemyPattern(e);
+  });
+
+  enemyBullets.forEach(b=>{
+    b.x+=b.vx;b.y+=b.vy;
+  });
+
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i];
+    for(let j=enemies.length-1;j>=0;j--){
+      const e=enemies[j];
+      if(Math.hypot(b.x-e.x,b.y-e.y)<b.r+e.r){
+        bullets.splice(i,1);
+        e.hp--;
+        if(e.hp<=0){
+          enemies.splice(j,1);
+          score+=100;
+        }
+        break;
+      }
+    }
+  }
+
+  if(player.inv>0)player.inv--;
+
+  enemyBullets.forEach((b,i)=>{
+    if(Math.hypot(b.x-player.x,b.y-player.y)<b.r+player.r && player.inv<=0){
+      enemyBullets.splice(i,1);
+      life--;
+      player.inv=90;
+      if(life<=0)gameOver();
+    }
+  });
+
+  bullets=bullets.filter(b=>b.y>-20);
+  enemyBullets=enemyBullets.filter(b=>
+    b.y<H+20&&b.x>-20&&b.x<W+20
+  );
+  enemies=enemies.filter(e=>e.y<H+30);
+
+  document.getElementById("score").textContent="SCORE : "+score;
+  document.getElementById("life").textContent="LIFE : "+life;
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  ctx.fillStyle="#10102b";
+  ctx.fillRect(0,0,W,H);
+
+  // 背景の星
+  for(let i=0;i<35;i++){
+    let x=(i*83)%W;
+    let y=(i*137+frame*0.5)%H;
+    circle(x,y,1,"#ffffff55");
+  }
+
+  bullets.forEach(b=>circle(b.x,b.y,b.r,"#8df5ff"));
+
+  enemyBullets.forEach(b=>{
+    circle(b.x,b.y,b.r,"#ff648f");
+    circle(b.x,b.y,2,"#fff");
+  });
+
+  enemies.forEach(e=>{
+    circle(e.x,e.y,e.r,e.type===0?"#bd79ff":"#ff527a");
+    circle(e.x,e.y,6,"#fff");
+  });
+
+  if(player.inv<=0||Math.floor(frame/5)%2===0){
+    drawPlayer();
+  }
+
+  // 画面下部の操作範囲
+  if(!pointer){
+    ctx.strokeStyle="#ffffff22";
+    ctx.beginPath();
+    ctx.arc(83,H-93,58,0,Math.PI*2);
+    ctx.stroke();
+  }
+}
+
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function gameOver(){
+  running=false;
+  document.getElementById("start").style.display="flex";
+  document.querySelector("#start h1").textContent="GAME OVER";
+  document.querySelector("#start p").textContent="SCORE : "+score;
+  document.getElementById("startButton").textContent="RETRY";
+}
+
+document.getElementById("startButton").onclick=()=>{
+  score=0;
+  life=3;
+  frame=0;
+  bullets=[];
+  enemyBullets=[];
+  enemies=[];
+  player={x:W/2,y:H*0.78,r:9,speed:4,inv:0};
+  resetJoy();
+  running=true;
+  document.getElementById("start").style.display="none";
+};
+
+loop();
+</script>
+</body>
+</html>
