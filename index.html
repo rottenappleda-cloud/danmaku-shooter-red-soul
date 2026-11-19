@@ -3,387 +3,882 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>紅月弾幕録 Ver.2</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>幻想紅月夜 Ver.3</title>
 <style>
 *{box-sizing:border-box}
-body{
- margin:0;background:#080817;color:white;
- font-family:sans-serif;overflow:hidden;touch-action:none
-}
-canvas{width:100vw;height:100dvh;display:block;touch-action:none}
-#info{position:fixed;top:8px;left:10px;z-index:2;font-size:14px;pointer-events:none;text-shadow:0 1px 4px black}
-#stick{
- position:fixed;width:116px;height:116px;left:25px;bottom:35px;
- border:2px solid #aaa8;border-radius:50%;background:#ffffff18;
- z-index:3;touch-action:none
-}
-#knob{
- position:absolute;width:42px;height:42px;left:35px;top:35px;
- border-radius:50%;background:#b8caffbb;border:2px solid white
-}
-#bomb{
- position:fixed;right:25px;bottom:50px;width:85px;height:85px;
- border-radius:50%;background:#bd315caa;border:2px solid white;
- color:white;font-size:15px;z-index:3;touch-action:none
-}
-#start{
- position:fixed;inset:0;display:flex;align-items:center;
- justify-content:center;flex-direction:column;
- background:#080817ee;z-index:5;text-align:center
-}
-button{cursor:pointer}
-#startButton{
- background:#bd315c;color:white;border:0;border-radius:12px;
- padding:14px 35px;font-size:20px
-}
+body{margin:0;background:#080817;color:white;font-family:sans-serif;overflow:hidden;touch-action:none}
+canvas{display:block;width:100vw;height:100dvh;touch-action:none}
+#hud{position:fixed;top:8px;left:10px;right:10px;z-index:2;pointer-events:none;text-shadow:0 1px 4px #000;font-size:13px;line-height:1.7}
+#bossbar{position:fixed;top:91px;left:8%;width:84%;height:10px;background:#333;border:1px solid #aaa;display:none;z-index:2}
+#bossfill{height:100%;width:100%;background:#55caff}
+#spell{position:fixed;top:34%;left:0;width:100%;text-align:center;color:#b9f3ff;font-size:21px;font-weight:bold;text-shadow:0 0 15px #27aaff;pointer-events:none;z-index:4;display:none}
+#overlay{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:linear-gradient(#080817ed,#18102aee);padding:20px;overflow:auto}
+h1{font-size:clamp(30px,8vw,48px);color:#b8eaff;text-shadow:0 0 20px #168bdc;margin:10px}
+h2{color:#d4f3ff}
+p{line-height:1.6}
+button{background:#174c78;color:white;border:1px solid #8bdcff;border-radius:10px;padding:12px 20px;font-size:16px;margin:5px;min-width:120px}
+button:active{background:#287db8}
+button.selected{background:#2586bd;border:2px solid white}
+#choices,#difficulties{display:flex;flex-wrap:wrap;justify-content:center}
+#stick{position:fixed;left:22px;bottom:28px;width:116px;height:116px;border:2px solid #ffffff66;border-radius:50%;background:#ffffff15;z-index:3;touch-action:none}
+#knob{position:absolute;left:35px;top:35px;width:42px;height:42px;border-radius:50%;background:#c8eaffbb;border:2px solid white}
+#bomb{position:fixed;right:22px;bottom:35px;width:78px;height:78px;border-radius:50%;background:#245e9cdd;border:2px solid white;color:white;font-weight:bold;z-index:3;touch-action:none;min-width:0}
+#dash{position:fixed;right:28px;bottom:125px;width:70px;height:54px;min-width:0;padding:5px;background:#167c9ddd}
+#spell{padding:8px}
+.hidden{display:none!important}
+.small{font-size:12px;color:#cbd9eb}
 </style>
 </head>
 <body>
 
-<div id="info">
- <div>紅月弾幕録 Ver.2</div>
+<div id="hud">
+ <div>幻想紅月夜 Ver.3</div>
+ <div id="characterHUD">PLAYER : ディフェンダー</div>
  <div id="score">SCORE : 0</div>
  <div id="life">LIFE : 3</div>
  <div id="bombs">BOMB : 3</div>
- <div id="bossInfo" style="display:none">BOSS</div>
+ <div id="stage">STAGE : 1</div>
 </div>
-
+<div id="bossbar"><div id="bossfill"></div></div>
+<div id="spell"></div>
 <canvas id="game"></canvas>
 
 <div id="stick"><div id="knob"></div></div>
-<button id="bomb">BOMB</button>
+<button id="dash">DASH<br><small>X</small></button>
+<button id="bomb">BOMB<br><small id="bombCount">3</small></button>
 
-<div id="start">
- <h1>紅月弾幕録</h1>
- <p>WASD・矢印キーで移動</p>
- <p>Shift：低速移動 / X：ボム</p>
- <button id="startButton">GAME START</button>
+<div id="overlay">
+ <h1>幻想紅月夜</h1>
+ <h2>紅月弾幕録 Ver.3</h2>
+ <p>氷の守護者、出撃。</p>
+ <div id="menu">
+  <button id="newGame">GAME START</button>
+  <button id="instructions">HOW TO PLAY</button>
+  <p id="highscore" class="small"></p>
+ </div>
+ <div id="select" class="hidden">
+  <h2>自機選択</h2>
+  <div id="choices">
+   <button class="selected">❄ ディフェンダー</button>
+  </div>
+  <p>落ち着いた性格。氷を扱う守護者。</p>
+  <p class="small">セリフ：後日設定予定</p>
+  <h2>難易度</h2>
+  <div id="difficulties">
+   <button class="selected" data-diff="0">EASY</button>
+   <button data-diff="1">NORMAL</button>
+   <button data-diff="2">HARD</button>
+  </div>
+  <button id="begin">出撃する！</button>
+  <button id="back">戻る</button>
+ </div>
+ <div id="help" class="hidden">
+  <h2>操作方法</h2>
+  <p>WASD・矢印：移動</p>
+  <p>SHIFT：低速移動</p>
+  <p>X：ダッシュ</p>
+  <p>C：ボム</p>
+  <p>ESC：ポーズ</p>
+  <p>iPad：左下の操作盤と右下のボタン</p>
+  <button id="helpBack">戻る</button>
+ </div>
 </div>
 
 <script>
+"use strict";
+
+// =====================================
+// キャンバス
+// =====================================
+
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
-
-let W,H,frame=0,score=0,life=3,bombs=3;
-let running=false,boss=null,bossSpawned=false;
-let player,bullets=[],enemyBullets=[],enemies=[],effects=[];
-const keys={};
+let W=innerWidth,H=innerHeight,DPR=1;
 
 function resize(){
- const d=Math.min(devicePixelRatio||1,2);
  W=innerWidth;H=innerHeight;
- canvas.width=W*d;canvas.height=H*d;
- ctx.setTransform(d,0,0,d,0,0);
+ DPR=Math.min(devicePixelRatio||1,2);
+ canvas.width=W*DPR;
+ canvas.height=H*DPR;
+ ctx.setTransform(DPR,0,0,DPR,0,0);
 }
 addEventListener("resize",resize);
 resize();
 
-player={x:W/2,y:H*.78,r:9,inv:0};
+// =====================================
+// キャラクター画像
+// =====================================
+
+const defenderImage=new Image();
+defenderImage.src="defender.png";
+
+let spriteCanvas=document.createElement("canvas");
+let spriteReady=false;
+
+defenderImage.onload=()=>{
+ const sw=Math.floor(defenderImage.width/2);
+ const sh=defenderImage.height;
+ spriteCanvas.width=sw;
+ spriteCanvas.height=sh;
+ const sctx=spriteCanvas.getContext("2d",{willReadFrequently:true});
+ sctx.drawImage(defenderImage,0,0,sw,sh,0,0,sw,sh);
+
+ // 白背景を透明化
+ const img=sctx.getImageData(0,0,sw,sh);
+ const d=img.data;
+ for(let i=0;i<d.length;i+=4){
+  if(d[i]>235&&d[i+1]>235&&d[i+2]>235){
+   d[i+3]=0;
+  }
+ }
+ sctx.putImageData(img,0,0);
+ spriteReady=true;
+};
+
+// =====================================
+// UI
+// =====================================
+
+const overlay=document.getElementById("overlay");
+const menu=document.getElementById("menu");
+const select=document.getElementById("select");
+const help=document.getElementById("help");
+const bossbar=document.getElementById("bossbar");
+const bossfill=document.getElementById("bossfill");
+const spell=document.getElementById("spell");
+
+let difficulty=0;
+let highscore=Number(localStorage.getItem("defenderHighscore")||0);
+
+document.getElementById("highscore").textContent="HIGH SCORE : "+highscore;
+
+document.getElementById("newGame").onclick=()=>{
+ menu.classList.add("hidden");
+ select.classList.remove("hidden");
+};
+
+document.getElementById("instructions").onclick=()=>{
+ menu.classList.add("hidden");
+ help.classList.remove("hidden");
+};
+
+document.getElementById("helpBack").onclick=()=>{
+ help.classList.add("hidden");
+ menu.classList.remove("hidden");
+};
+
+document.getElementById("back").onclick=()=>{
+ select.classList.add("hidden");
+ menu.classList.remove("hidden");
+};
+
+document.querySelectorAll("[data-diff]").forEach(b=>{
+ b.onclick=()=>{
+  difficulty=Number(b.dataset.diff);
+  document.querySelectorAll("[data-diff]").forEach(x=>x.classList.remove("selected"));
+  b.classList.add("selected");
+ };
+});
+
+// =====================================
+// ゲーム状態
+// =====================================
+
+let running=false;
+let paused=false;
+let frame=0;
+let score=0;
+let stage=1;
+let lives=3;
+let bombs=3;
+let enemies=[];
+let bullets=[];
+let enemyBullets=[];
+let particles=[];
+let boss=null;
+let lastTime=0;
+let spawnTimer=0;
+let stageMessage=0;
+let gameOver=false;
+
+const player={
+ x:0,y:0,
+ vx:0,vy:0,
+ lastX:0,lastY:-1,
+ speed:3.6,
+ radius:4,
+ invincible:0,
+ dashCooldown:0,
+ dashTime:0,
+ shotTimer:0
+};
+
+// =====================================
+// 入力
+// =====================================
+
+const keys={};
+let joy={x:0,y:0};
+let joyActive=false;
 
 addEventListener("keydown",e=>{
  const k=e.key.toLowerCase();
  if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k))e.preventDefault();
+
+ if(!keys[k]){
+  if(k==="x")useDash();
+  if(k==="c")useBomb();
+  if(k==="escape")togglePause();
+ }
  keys[k]=true;
 });
-addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
-addEventListener("blur",()=>Object.keys(keys).forEach(k=>keys[k]=false));
 
-let joyX=0,joyY=0,pointer=null;
+addEventListener("keyup",e=>{
+ keys[e.key.toLowerCase()]=false;
+});
+
+function getInput(){
+ let x=joy.x;
+ let y=joy.y;
+ if(keys["arrowleft"]||keys["a"])x-=1;
+ if(keys["arrowright"]||keys["d"])x+=1;
+ if(keys["arrowup"]||keys["w"])y-=1;
+ if(keys["arrowdown"]||keys["s"])y+=1;
+ const len=Math.hypot(x,y);
+ if(len>1){x/=len;y/=len;}
+ return {x,y};
+}
+
+// =====================================
+// タッチ操作
+// =====================================
+
 const stick=document.getElementById("stick");
 const knob=document.getElementById("knob");
 
-function joystick(e){
+function updateJoy(e){
  const r=stick.getBoundingClientRect();
  let dx=e.clientX-(r.left+r.width/2);
  let dy=e.clientY-(r.top+r.height/2);
- const len=Math.hypot(dx,dy),max=39;
- if(len>max){dx=dx/len*max;dy=dy/len*max}
- joyX=dx/max;joyY=dy/max;
- knob.style.left=35+dx+"px";
- knob.style.top=35+dy+"px";
+ const max=39;
+ const len=Math.hypot(dx,dy);
+ if(len>max){dx=dx/len*max;dy=dy/len*max;}
+ joy.x=dx/max;
+ joy.y=dy/max;
+ knob.style.left=(35+dx)+"px";
+ knob.style.top=(35+dy)+"px";
 }
+
 stick.addEventListener("pointerdown",e=>{
- pointer=e.pointerId;stick.setPointerCapture(pointer);joystick(e);
+ joyActive=true;
+ stick.setPointerCapture(e.pointerId);
+ updateJoy(e);
 });
 stick.addEventListener("pointermove",e=>{
- if(e.pointerId===pointer)joystick(e);
+ if(joyActive)updateJoy(e);
 });
-function resetJoy(){
- pointer=null;joyX=0;joyY=0;
- knob.style.left="35px";knob.style.top="35px";
+function stopJoy(){
+ joyActive=false;
+ joy={x:0,y:0};
+ knob.style.left="35px";
+ knob.style.top="35px";
 }
-stick.addEventListener("pointerup",resetJoy);
-stick.addEventListener("pointercancel",resetJoy);
+stick.addEventListener("pointerup",stopJoy);
+stick.addEventListener("pointercancel",stopJoy);
 
-function circle(x,y,r,color){
- ctx.fillStyle=color;
- ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
-}
-
-function shot(){
- bullets.push({x:player.x-6,y:player.y-12,vy:-10});
- bullets.push({x:player.x+6,y:player.y-12,vy:-10});
-}
-
-function enemyShot(x,y,a,s,r=5){
- enemyBullets.push({
-  x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r
- });
-}
-
-function spawnEnemy(){
- enemies.push({
-  x:35+Math.random()*(W-70),y:-20,
-  hp:3,vy:1.3,r:16
- });
-}
-
-function spawnBoss(){
- boss={
-  x:W/2,y:100,hp:180,maxHp:180,
-  dir:1,r:32,attack:0
- };
- bossSpawned=true;
- document.getElementById("bossInfo").style.display="block";
-}
-
-function bossPattern(){
- if(!boss)return;
- boss.attack++;
-
- if(boss.attack%48===0){
-  for(let i=0;i<18;i++){
-   enemyShot(
-    boss.x,boss.y,
-    i*Math.PI*2/18+boss.attack*.025,
-    2.0
-   );
-  }
- }
-
- if(boss.attack%90===0){
-  const a=Math.atan2(player.y-boss.y,player.x-boss.x);
-  for(let i=-3;i<=3;i++){
-   enemyShot(boss.x,boss.y,a+i*.13,2.8);
-  }
- }
-
- boss.x+=boss.dir*1.5;
- if(boss.x>W-45||boss.x<45)boss.dir*=-1;
-}
-
-function useBomb(){
- if(!running||bombs<=0)return;
- bombs--;
-
- enemyBullets=[];
- enemies.forEach(e=>{
-  e.hp-=5;
-  if(e.hp<=0)score+=100;
- });
- enemies=enemies.filter(e=>e.hp>0);
-
- if(boss){
-  boss.hp-=35;
-  if(boss.hp<=0)defeatBoss();
- }
-
- effects.push({x:player.x,y:player.y,r:10,alpha:1});
-}
-
-function defeatBoss(){
- score+=5000;
- boss=null;
- document.getElementById("bossInfo").style.display="none";
- enemyBullets=[];
-}
-
+document.getElementById("dash").addEventListener("pointerdown",e=>{
+ e.preventDefault();useDash();
+});
 document.getElementById("bomb").addEventListener("pointerdown",e=>{
  e.preventDefault();useBomb();
 });
 
-function drawPlayer(){
- ctx.save();
- ctx.translate(player.x,player.y);
+// =====================================
+// 開始・終了
+// =====================================
 
- ctx.fillStyle="#b8e8ff";
- ctx.beginPath();
- ctx.moveTo(0,-15);ctx.lineTo(-11,12);
- ctx.lineTo(0,7);ctx.lineTo(11,12);
- ctx.closePath();ctx.fill();
+document.getElementById("begin").onclick=startGame;
 
- circle(0,0,4,"#ff6688");
+function startGame(){
+ overlay.classList.add("hidden");
+ enemies=[];
+ bullets=[];
+ enemyBullets=[];
+ particles=[];
+ boss=null;
+ score=0;
+ stage=1;
+ lives=3;
+ bombs=3;
+ frame=0;
+ spawnTimer=0;
+ paused=false;
+ gameOver=false;
 
- // 当たり判定
- circle(0,0,2.5,"#ffffff");
+ player.x=W/2;
+ player.y=H*.78;
+ player.lastX=0;
+ player.lastY=-1;
+ player.invincible=100;
+ player.dashCooldown=0;
+ player.dashTime=0;
+ player.shotTimer=0;
 
- if(keys["shift"]){
-  ctx.strokeStyle="#ffffff";
-  ctx.beginPath();ctx.arc(0,0,7,0,Math.PI*2);ctx.stroke();
- }
- ctx.restore();
+ running=true;
+ stageMessage=160;
+ bossbar.style.display="none";
+ spell.style.display="none";
+ updateHUD();
 }
 
-function update(){
+function endGame(){
+ running=false;
+ gameOver=true;
+ bossbar.style.display="none";
+ spell.style.display="none";
+
+ if(score>highscore){
+  highscore=score;
+  localStorage.setItem("defenderHighscore",String(highscore));
+ }
+
+ overlay.classList.remove("hidden");
+ menu.classList.remove("hidden");
+ select.classList.add("hidden");
+ help.classList.add("hidden");
+
+ document.querySelector("#menu h2").textContent="GAME OVER";
+ document.querySelector("#menu p").textContent="SCORE : "+score+" / HIGH SCORE : "+highscore;
+ document.getElementById("newGame").textContent="RETRY";
+}
+
+// =====================================
+// ダッシュ
+// =====================================
+
+function useDash(){
+ if(!running||paused||player.dashCooldown>0)return;
+
+ let dx=player.lastX;
+ let dy=player.lastY;
+ if(Math.hypot(dx,dy)<.1){dy=-1;}
+
+ const len=Math.hypot(dx,dy);
+ dx/=len;dy/=len;
+
+ player.vx=dx*13;
+ player.vy=dy*13;
+ player.dashTime=13;
+ player.dashCooldown=100;
+ player.invincible=Math.max(player.invincible,25);
+
+ for(let i=0;i<15;i++){
+  particles.push({
+   x:player.x,y:player.y,
+   vx:(Math.random()-.5)*4,
+   vy:(Math.random()-.5)*4,
+   life:25,color="#8eeaff"
+  });
+ }
+}
+
+// =====================================
+// ボム
+// =====================================
+
+function useBomb(){
+ if(!running||paused||bombs<=0)return;
+ bombs--;
+
+ enemyBullets=[];
+ for(const e of enemies)e.hp-=5;
+ if(boss)boss.hp-=35;
+
+ for(let i=0;i<70;i++){
+  const a=Math.random()*Math.PI*2;
+  const s=Math.random()*8+2;
+  particles.push({
+   x:player.x,y:player.y,
+   vx:Math.cos(a)*s,vy:Math.sin(a)*s,
+   life:35,color="#a9eaff"
+  });
+ }
+ updateHUD();
+}
+
+// =====================================
+// 弾・敵
+// =====================================
+
+function shoot(){
+ const power=difficulty===0?1: difficulty===1?1.2:1.4;
+ bullets.push({x:player.x-12,y:player.y-20,vx:0,vy:-10,r:5,damage:power});
+ bullets.push({x:player.x+12,y:player.y-20,vx:0,vy:-10,r:5,damage:power});
+}
+
+function spawnEnemy(){
+ const x=30+Math.random()*(W-60);
+ enemies.push({
+  x,y:-25,hp:3,
+  vx:(Math.random()-.5)*1.5,
+  vy:1.2+Math.random(),
+  timer:0
+ });
+}
+
+function spawnEnemyBullet(x,y,vx,vy,color="#ff6688",r=5){
+ enemyBullets.push({x,y,vx,vy,r,color});
+}
+
+function aimedBullet(x,y,speed,angleOffset=0){
+ const a=Math.atan2(player.y-y,player.x-x)+angleOffset;
+ spawnEnemyBullet(x,y,Math.cos(a)*speed,Math.sin(a)*speed);
+}
+
+function circlePattern(x,y,count,speed,offset=0,color="#ff6688"){
+ for(let i=0;i<count;i++){
+  const a=(Math.PI*2/count)*i+offset;
+  spawnEnemyBullet(x,y,Math.cos(a)*speed,Math.sin(a)*speed,color,5);
+ }
+}
+
+// =====================================
+// ボス
+// =====================================
+
+function createBoss(){
+ boss={
+  x:W/2,y:105,
+  hp:stage===1?180:260,
+  maxHp:stage===1?180:260,
+  timer:0,
+  phase:0
+ };
+ bossbar.style.display="block";
+ spell.style.display="block";
+ spell.textContent=stage===1?
+  "氷符「凍てつく守護壁」":
+  "絶対零度「蒼氷の世界」";
+}
+
+function bossAttack(){
+ if(!boss)return;
+ const t=boss.timer;
+ const speed=(difficulty===0?1.7:difficulty===1?2.3:2.9);
+
+ if(stage===1){
+  if(t%65===0)circlePattern(boss.x,boss.y+20,14,speed,t*.025,"#72dfff");
+  if(t%32===0)aimedBullet(boss.x,boss.y+20,speed+1);
+ }else{
+  if(t%45===0)circlePattern(boss.x,boss.y+20,20,speed,t*.04,"#7aafff");
+  if(t%22===0){
+   aimedBullet(boss.x-25,boss.y+15,speed+1,-.16);
+   aimedBullet(boss.x+25,boss.y+15,speed+1,.16);
+  }
+ }
+}
+
+// =====================================
+// ステージ進行
+// =====================================
+
+function nextStage(){
+ stage++;
+ boss=null;
+ enemies=[];
+ enemyBullets=[];
+ bullets=[];
+ bossbar.style.display="none";
+ spell.style.display="none";
+ player.invincible=150;
+ player.x=W/2;
+ player.y=H*.78;
+ stageMessage=180;
+ frame=0;
+ if(stage>2){
+  clearGame();
+ }
+}
+
+function clearGame(){
+ running=false;
+ bossbar.style.display="none";
+ spell.style.display="none";
+
+ if(score>highscore){
+  highscore=score;
+  localStorage.setItem("defenderHighscore",String(highscore));
+ }
+
+ overlay.classList.remove("hidden");
+ menu.classList.remove("hidden");
+ select.classList.add("hidden");
+ help.classList.add("hidden");
+ document.querySelector("#menu h2").textContent="ALL STAGE CLEAR!";
+ document.querySelector("#menu p").textContent="SCORE : "+score+" / HIGH SCORE : "+highscore;
+ document.getElementById("newGame").textContent="もう一度遊ぶ";
+}
+
+// =====================================
+// 衝突判定
+// =====================================
+
+function hit(a,b,r){
+ return Math.hypot(a.x-b.x,a.y-b.y)<r;
+}
+
+function damagePlayer(){
+ if(player.invincible>0)return;
+ lives--;
+ player.invincible=110;
+ updateHUD();
+
+ if(lives<=0)endGame();
+}
+
+// =====================================
+// HUD
+// =====================================
+
+function updateHUD(){
+ document.getElementById("score").textContent="SCORE : "+score;
+ document.getElementById("life").textContent="LIFE : "+lives;
+ document.getElementById("bombs").textContent="BOMB : "+bombs;
+ document.getElementById("bombCount").textContent=bombs;
+ document.getElementById("stage").textContent="STAGE : "+stage;
+}
+
+// =====================================
+// ポーズ
+// =====================================
+
+function togglePause(){
  if(!running)return;
+ paused=!paused;
+ if(paused){
+  overlay.classList.remove("hidden");
+  menu.classList.remove("hidden");
+  document.querySelector("#menu h2").textContent="PAUSE";
+  document.querySelector("#menu p").textContent="ESCキーで再開";
+  document.getElementById("newGame").textContent="RESUME";
+ }else{
+  overlay.classList.add("hidden");
+ }
+}
+
+document.getElementById("newGame").addEventListener("click",()=>{
+ if(paused){
+  paused=false;
+  overlay.classList.add("hidden");
+ }
+});
+
+// =====================================
+// 更新処理
+// =====================================
+
+function update(){
+ if(!running||paused)return;
  frame++;
 
- let kx=0,ky=0;
- if(keys["arrowleft"]||keys["a"])kx--;
- if(keys["arrowright"]||keys["d"])kx++;
- if(keys["arrowup"]||keys["w"])ky--;
- if(keys["arrowdown"]||keys["s"])ky++;
+ const input=getInput();
+ const slow=keys["shift"];
+ const speed=slow?1.8:player.speed;
 
- let mx=joyX+kx,my=joyY+ky;
- let len=Math.hypot(mx,my);
- if(len>1){mx/=len;my/=len}
-
- const speed=keys["shift"]?1.8:4;
- player.x+=mx*speed;
- player.y+=my*speed;
+ if(player.dashTime>0){
+  player.x+=player.vx;
+  player.y+=player.vy;
+  player.dashTime--;
+  player.vx*=.88;
+  player.vy*=.88;
+ }else{
+  player.x+=input.x*speed;
+  player.y+=input.y*speed;
+  if(input.x||input.y){
+   player.lastX=input.x;
+   player.lastY=input.y;
+  }
+ }
 
  player.x=Math.max(15,Math.min(W-15,player.x));
- player.y=Math.max(25,Math.min(H-25,player.y));
+ player.y=Math.max(35,Math.min(H-25,player.y));
 
- if(frame%9===0)shot();
- if(frame%100===0&&!boss)spawnEnemy();
+ if(player.invincible>0)player.invincible--;
+ if(player.dashCooldown>0)player.dashCooldown--;
 
- if(frame===1200&&!bossSpawned)spawnBoss();
+ player.shotTimer++;
+ if(player.shotTimer%9===0)shoot();
 
- bullets.forEach(b=>b.y+=b.vy);
- enemies.forEach(e=>e.y+=e.vy);
+ // 敵の出現
+ spawnTimer++;
+ if(!boss&&spawnTimer> (difficulty===0?70: difficulty===1?55:42)){
+  spawnEnemy();
+  spawnTimer=0;
+ }
 
- enemies.forEach(e=>{
-  if(frame%75===0){
-   const a=Math.atan2(player.y-e.y,player.x-e.x);
-   for(let i=-2;i<=2;i++)
-    enemyShot(e.x,e.y,a+i*.18,2.2);
+ // 敵の移動・攻撃
+ for(const e of enemies){
+  e.x+=e.vx;
+  e.y+=e.vy;
+  e.timer++;
+  if(e.timer%85===0)aimedBullet(e.x,e.y,2.3);
+ }
+ enemies=enemies.filter(e=>e.hp>0&&e.y<H+50);
+
+ // ボス登場
+ if(frame>1250&&!boss){
+  createBoss();
+ }
+
+ if(boss){
+  boss.timer++;
+  boss.x=W/2+Math.sin(boss.timer*.012)*W*.27;
+  bossAttack();
+  bossfill.style.width=Math.max(0,boss.hp/boss.maxHp*100)+"%";
+  if(boss.hp<=0){
+   score+=stage===1?5000:10000;
+   for(let i=0;i<50;i++){
+    particles.push({
+     x:boss.x,y:boss.y,
+     vx:(Math.random()-.5)*8,
+     vy:(Math.random()-.5)*8,
+     life:40,color:"#8ceaff"
+    });
+   }
+   nextStage();
   }
- });
+ }
 
- bossPattern();
-
- enemyBullets.forEach(b=>{
+ // 自機ショット
+ for(const b of bullets){
   b.x+=b.vx;b.y+=b.vy;
- });
-
- for(let i=bullets.length-1;i>=0;i--){
-  const b=bullets[i];
-  let hit=false;
-
-  for(let j=enemies.length-1;j>=0;j--){
-   const e=enemies[j];
-   if(Math.hypot(b.x-e.x,b.y-e.y)<e.r+4){
-    e.hp--;hit=true;
-    if(e.hp<=0){enemies.splice(j,1);score+=100}
+  for(const e of enemies){
+   if(hit(b,e,17)){
+    e.hp-=b.damage;
+    b.dead=true;
+    score+=10;
     break;
    }
   }
-
-  if(!hit&&boss&&Math.hypot(b.x-boss.x,b.y-boss.y)<boss.r+5){
-   boss.hp-=1;hit=true;
-   if(boss.hp<=0)defeatBoss();
-  }
-
-  if(hit)bullets.splice(i,1);
- }
-
- if(player.inv>0)player.inv--;
-
- for(let i=enemyBullets.length-1;i>=0;i--){
-  const b=enemyBullets[i];
-  if(Math.hypot(b.x-player.x,b.y-player.y)<b.r+3&&player.inv<=0){
-   enemyBullets.splice(i,1);
-   life--;player.inv=90;
-   if(life<=0)gameOver();
-   break;
+  if(boss&&hit(b,boss,45)){
+   boss.hp-=b.damage;
+   b.dead=true;
   }
  }
+ bullets=bullets.filter(b=>!b.dead&&b.y>-20);
 
- bullets=bullets.filter(b=>b.y>-20);
- enemyBullets=enemyBullets.filter(b=>
-  b.y<H+20&&b.x>-20&&b.x<W+20
- );
- enemies=enemies.filter(e=>e.y<H+30);
+ // 敵弾
+ for(const b of enemyBullets){
+  b.x+=b.vx;b.y+=b.vy;
+  if(hit(b,player,b.r+player.radius)&&player.invincible<=0){
+   damagePlayer();
+   b.dead=true;
+  }
+ }
+ enemyBullets=enemyBullets.filter(b=>!b.dead&&b.x>-30&&b.x<W+30&&b.y>-30&&b.y<H+30);
 
- effects.forEach(e=>{
-  e.r+=8;e.alpha-=.04;
- });
- effects=effects.filter(e=>e.alpha>0);
+ // 敵と自機
+ for(const e of enemies){
+  if(hit(e,player,17)&&player.invincible<=0){
+   damagePlayer();
+  }
+ }
 
- document.getElementById("score").textContent="SCORE : "+score;
- document.getElementById("life").textContent="LIFE : "+life;
- document.getElementById("bombs").textContent="BOMB : "+bombs;
+ // ボス接触
+ if(boss&&hit(boss,player,42)&&player.invincible<=0){
+  damagePlayer();
+ }
+
+ // 敵撃破
+ for(const e of enemies){
+  if(e.hp<=0)score+=100;
+ }
+ enemies=enemies.filter(e=>e.hp>0);
+
+ // パーティクル
+ for(const p of particles){
+  p.x+=p.vx;p.y+=p.vy;
+  p.vx*=.96;p.vy*=.96;
+  p.life--;
+ }
+ particles=particles.filter(p=>p.life>0);
+
+ if(stageMessage>0)stageMessage--;
+ updateHUD();
+}
+
+// =====================================
+// 描画
+// =====================================
+
+function drawBackground(){
+ ctx.fillStyle="#080817";
+ ctx.fillRect(0,0,W,H);
+
+ // 星
+ for(let i=0;i<65;i++){
+  const x=(i*137)%W;
+  const y=(i*89+frame*.7)%H;
+  ctx.fillStyle=i%3===0?"#7caedb":"#ffffff55";
+  ctx.fillRect(x,y,2,2);
+ }
+
+ // 遠くの月
+ ctx.beginPath();
+ ctx.arc(W*.78,H*.18,35,0,Math.PI*2);
+ ctx.fillStyle="#a9dfff22";
+ ctx.fill();
+ ctx.beginPath();
+ ctx.arc(W*.78,H*.18,25,0,Math.PI*2);
+ ctx.fillStyle="#bdeaff22";
+ ctx.fill();
+}
+
+function drawPlayer(){
+ ctx.save();
+ if(player.invincible>0&&Math.floor(frame/5)%2===0)ctx.globalAlpha=.4;
+
+ if(spriteReady){
+  const sw=spriteCanvas.width;
+  const sh=spriteCanvas.height;
+  ctx.drawImage(spriteCanvas,0,0,sw,sh,player.x-29,player.y-47,58,94);
+ }else{
+  ctx.fillStyle="#222";
+  ctx.fillRect(player.x-12,player.y-18,24,36);
+  ctx.fillStyle="#59d9ff";
+  ctx.fillRect(player.x-7,player.y-12,14,24);
+ }
+ ctx.restore();
+
+ // 当たり判定
+ ctx.beginPath();
+ ctx.arc(player.x,player.y,player.radius,0,Math.PI*2);
+ ctx.fillStyle="#ffffff";
+ ctx.fill();
+
+ if(keys["shift"]){
+  ctx.beginPath();
+  ctx.arc(player.x,player.y,10,0,Math.PI*2);
+  ctx.strokeStyle="#b7efff";
+  ctx.stroke();
+ }
+}
+
+function drawBullets(){
+ for(const b of bullets){
+  ctx.fillStyle="#a8eeff";
+  ctx.beginPath();
+  ctx.ellipse(b.x,b.y,4,9,0,0,Math.PI*2);
+  ctx.fill();
+ }
+ for(const b of enemyBullets){
+  ctx.fillStyle=b.color;
+  ctx.beginPath();
+  ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle="#ffffff66";
+  ctx.stroke();
+ }
+}
+
+function drawEnemies(){
+ for(const e of enemies){
+  ctx.fillStyle="#a94b76";
+  ctx.beginPath();
+  ctx.arc(e.x,e.y,14,0,Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle="#ffd5e5";
+  ctx.fillRect(e.x-5,e.y-3,10,5);
+ }
+}
+
+function drawBoss(){
+ if(!boss)return;
+ ctx.save();
+ ctx.fillStyle="#173d63";
+ ctx.strokeStyle="#8eeaff";
+ ctx.lineWidth=3;
+ ctx.beginPath();
+ ctx.arc(boss.x,boss.y,37,0,Math.PI*2);
+ ctx.fill();
+ ctx.stroke();
+ ctx.fillStyle="#d9f7ff";
+ ctx.beginPath();
+ ctx.arc(boss.x,boss.y,12,0,Math.PI*2);
+ ctx.fill();
+ ctx.restore();
+}
+
+function drawParticles(){
+ for(const p of particles){
+  ctx.globalAlpha=Math.max(0,p.life/40);
+  ctx.fillStyle=p.color;
+  ctx.beginPath();
+  ctx.arc(p.x,p.y,3,0,Math.PI*2);
+  ctx.fill();
+ }
+ ctx.globalAlpha=1;
+}
+
+function drawStageMessage(){
+ if(stageMessage>0){
+  ctx.save();
+  ctx.textAlign="center";
+  ctx.fillStyle="#d4f3ff";
+  ctx.font="bold 28px sans-serif";
+  ctx.shadowColor="#168bdc";
+  ctx.shadowBlur=15;
+  ctx.fillText("STAGE "+stage,W/2,H*.42);
+  ctx.font="16px sans-serif";
+  ctx.fillText(stage===1?"氷の守護者":"蒼氷の世界",W/2,H*.42+35);
+  ctx.restore();
+ }
 }
 
 function draw(){
- ctx.fillStyle="#10102b";
- ctx.fillRect(0,0,W,H);
+ drawBackground();
+ drawBullets();
+ drawEnemies();
+ drawBoss();
+ drawParticles();
+ if(running)drawPlayer();
+ drawStageMessage();
 
- for(let i=0;i<40;i++){
-  circle((i*83)%W,(i*137+frame*.5)%H,1,"#ffffff55");
+ if(paused){
+  ctx.fillStyle="#0009";
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="white";
+  ctx.textAlign="center";
+  ctx.font="bold 30px sans-serif";
+  ctx.fillText("PAUSE",W/2,H/2);
  }
-
- bullets.forEach(b=>circle(b.x,b.y,4,"#8df5ff"));
-
- enemyBullets.forEach(b=>{
-  circle(b.x,b.y,b.r,"#ff648f");
-  circle(b.x,b.y,2,"white");
- });
-
- enemies.forEach(e=>{
-  circle(e.x,e.y,e.r,"#bd79ff");
-  circle(e.x,e.y,6,"white");
- });
-
- if(boss){
-  circle(boss.x,boss.y,boss.r,"#ff477f");
-  circle(boss.x,boss.y,15,"#fff0f5");
-
-  ctx.fillStyle="#333";
-  ctx.fillRect(15,42,W-30,10);
-  ctx.fillStyle="#ff3c68";
-  ctx.fillRect(15,42,(W-30)*Math.max(0,boss.hp)/boss.maxHp,10);
- }
-
- effects.forEach(e=>{
-  ctx.globalAlpha=e.alpha;
-  ctx.strokeStyle="#ffe6a1";
-  ctx.lineWidth=5;
-  ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.stroke();
-  ctx.globalAlpha=1;
- });
-
- if(player.inv<=0||Math.floor(frame/5)%2===0)drawPlayer();
 }
 
-function gameOver(){
- running=false;
- document.getElementById("start").style.display="flex";
- document.querySelector("#start h1").textContent="GAME OVER";
- document.querySelector("#start p").textContent="SCORE : "+score;
- document.getElementById("startButton").textContent="RETRY";
-}
+// =====================================
+// メインループ
+// =====================================
 
-function loop(){
- update();draw();
+function loop(time){
+ if(!lastTime)lastTime=time;
+ const delta=Math.min((time-lastTime)/16.67,2);
+ lastTime=time;
+
+ if(running&&!paused){
+  // フレーム差を考慮して更新
+  accumulator+=delta;
+  while(accumulator>=1){
+   update();
+   accumulator--;
+  }
+ }
+ draw();
  requestAnimationFrame(loop);
 }
 
-document.getElementById("startButton").onclick=()=>{
- score=0;life=3;bombs=3;frame=0;
- bullets=[];enemyBullets=[];enemies=[];effects=[];
- boss=null;bossSpawned=false;
- player={x:W/2,y:H*.78,r:9,inv:0};
- resetJoy();
- Object.keys(keys).forEach(k=>keys[k]=false);
- document.getElementById("bossInfo").style.display="none";
- running=true;
- document.getElementById("start").style.display="none";
-};
+let accumulator=0;
+requestAnimationFrame(loop);
 
-loop();
 </script>
 </body>
 </html>
