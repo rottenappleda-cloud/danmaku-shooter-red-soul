@@ -4,57 +4,58 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>幻想紅月夜 Ver.3.4</title>
+<title>幻想紅月夜 Ver.4.0</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#080817;color:white;font-family:sans-serif;overflow:hidden;touch-action:none}
 canvas{width:100vw;height:100dvh;display:block;touch-action:none}
 #hud{position:fixed;top:8px;left:10px;z-index:2;pointer-events:none;text-shadow:0 1px 5px black;font-size:13px;line-height:1.7}
-#bossbar{position:fixed;top:130px;left:8%;width:84%;height:10px;background:#333;border:1px solid #aaa;display:none;z-index:2}
+#bossbar{position:fixed;top:125px;left:8%;width:84%;height:10px;background:#333;border:1px solid #aaa;display:none;z-index:2}
 #bossfill{height:100%;width:100%;background:#55caff}
-#spell{position:fixed;top:34%;left:0;width:100%;text-align:center;color:#c5f2ff;font-size:28px;font-weight:bold;text-shadow:0 0 15px #27aaff,0 0 30px #168bdc;z-index:4;pointer-events:none;display:none}
+#spellText{position:fixed;top:34%;left:0;width:100%;text-align:center;color:#c5f2ff;font-size:27px;font-weight:bold;text-shadow:0 0 15px #27aaff;z-index:4;pointer-events:none;display:none}
 #overlay{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:linear-gradient(#080817ed,#18102aee);padding:18px;overflow:auto}
 h1{font-size:clamp(30px,8vw,48px);color:#b8eaff;text-shadow:0 0 20px #168bdc}
 h2{color:#d4f3ff}
 p{line-height:1.6}
-button{background:#174c78;color:white;border:1px solid #8bdcff;border-radius:10px;padding:12px 20px;font-size:16px;margin:5px;min-width:120px;cursor:pointer}
+button{background:#174c78;color:white;border:1px solid #8bdcff;border-radius:10px;padding:12px 20px;font-size:16px;margin:5px;min-width:110px;cursor:pointer}
 button:active{background:#287db8}
 button.selected{background:#2586bd;border:2px solid white}
 #choices,#difficulties{display:flex;flex-wrap:wrap;justify-content:center}
 #stick{position:fixed;left:22px;bottom:28px;width:116px;height:116px;border:2px solid #ffffff66;border-radius:50%;background:#ffffff15;z-index:3;touch-action:none}
 #knob{position:absolute;left:35px;top:35px;width:42px;height:42px;border-radius:50%;background:#c8eaffbb;border:2px solid white}
-#dash{position:fixed;right:28px;bottom:125px;width:70px;height:54px;min-width:0;padding:5px;background:#167c9ddd;z-index:3}
-#bomb{position:fixed;right:22px;bottom:35px;width:78px;height:70px;min-width:0;padding:5px;border-radius:15px;background:#245e9cdd;border:2px solid white;z-index:3}
-#spellButton{position:fixed;right:112px;bottom:35px;width:88px;height:70px;min-width:0;padding:5px;border-radius:15px;background:#7542aadd;border:2px solid #d9c4ff;z-index:3}
+#dash{position:fixed;right:28px;bottom:190px;width:70px;height:48px;min-width:0;padding:5px;background:#167c9ddd;z-index:3}
+#bomb{position:fixed;right:22px;bottom:110px;width:78px;height:65px;min-width:0;padding:5px;background:#245e9cdd;border:2px solid white;z-index:3}
+#spellButton{position:fixed;right:22px;bottom:30px;width:90px;height:65px;min-width:0;padding:5px;background:#6841a8dd;border:2px solid #d9c2ff;z-index:3}
 .small{font-size:12px;color:#cbd9eb}
 .hidden{display:none!important}
+button:disabled{opacity:.4}
 </style>
 </head>
 <body>
 
 <div id="hud">
- <div>幻想紅月夜 Ver.3.4</div>
+ <div>幻想紅月夜 Ver.4.0</div>
  <div>PLAYER : ディフェンダー</div>
  <div id="score">SCORE : 0</div>
  <div id="life">LIFE : 3</div>
  <div id="bombs">BOMB : 3</div>
- <div id="spellCount">SPELL : 3</div>
+ <div id="soul">SOUL : 0 / 10</div>
  <div id="stage">STAGE : 1</div>
- <div id="protection"></div>
+ <div id="cooldown">BOMB : READY</div>
 </div>
 
 <div id="bossbar"><div id="bossfill"></div></div>
-<div id="spell"></div>
+<div id="spellText"></div>
 <canvas id="game"></canvas>
 
 <div id="stick"><div id="knob"></div></div>
 <button id="dash">DASH<br><small>X</small></button>
-<button id="spellButton">SPELL<br><small>Z / 3</small></button>
 <button id="bomb">BOMB<br><small id="bombCount">3</small></button>
+<button id="spellButton">SPELL<br><small id="spellCount">0 / 10</small></button>
 
 <div id="overlay">
  <h1>幻想紅月夜</h1>
- <h2>紅月弾幕録 Ver.3.4</h2>
+ <h2>紅月弾幕録 Ver.4.0</h2>
  <p>氷の守護者、出撃。</p>
 
  <div id="menu">
@@ -65,9 +66,10 @@ button.selected{background:#2586bd;border:2px solid white}
 
  <div id="select" class="hidden">
   <h2>自機選択</h2>
-  <div id="choices"><button class="selected">❄ ディフェンダー</button></div>
+  <div id="choices">
+   <button class="selected">❄ ディフェンダー</button>
+  </div>
   <p>落ち着いた性格。氷を扱う守護者。</p>
-  <p class="small">セリフ：後日設定予定</p>
   <h2>難易度</h2>
   <div id="difficulties">
    <button class="selected" data-diff="0">EASY</button>
@@ -83,9 +85,8 @@ button.selected{background:#2586bd;border:2px solid white}
   <p>WASD・矢印：移動</p>
   <p>SHIFT：低速移動</p>
   <p>X：ダッシュ</p>
-  <p>C：ボム</p>
-  <p>Z：スペルカード「本能解放」</p>
-  <p>敵弾を10秒間無効化。波紋レーザーと電気球3発を発射。</p>
+  <p>C：ボム（敵弾を消す・10秒クールダウン）</p>
+  <p>Z：スペルカード（ソウル10個必要）</p>
   <p>ESC：ポーズ</p>
   <p>iPad：左下の操作盤と右下のボタン</p>
   <button id="helpBack">戻る</button>
@@ -109,13 +110,14 @@ button.selected{background:#2586bd;border:2px solid white}
 "use strict";
 
 // ===================================
-// 画面
+// 画面とキャンバス
 // ===================================
 
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
 
-let W=innerWidth,H=innerHeight,DPR=1;
+let W=innerWidth,H=innerHeight;
+let DPR=1;
 
 function resize(){
  W=innerWidth;
@@ -130,28 +132,43 @@ resize();
 
 // ===================================
 // 自機画像
+// defender.png を同じ場所に置く
 // ===================================
 
 const defenderImage=new Image();
-defenderImage.src="defender_new.png";
+defenderImage.src="defender.png";
 
-const spriteCanvas=document.createElement("canvas");
+let spriteCanvas=document.createElement("canvas");
 let spriteReady=false;
 
 defenderImage.onload=function(){
  const sw=defenderImage.width;
  const sh=defenderImage.height;
- if(!sw||!sh)return;
+
+ if(sw<=0||sh<=0)return;
 
  spriteCanvas.width=sw;
  spriteCanvas.height=sh;
- const sctx=spriteCanvas.getContext("2d");
+
+ const sctx=spriteCanvas.getContext("2d",{willReadFrequently:true});
  sctx.drawImage(defenderImage,0,0);
+
+ // 白背景を透明化
+ const imageData=sctx.getImageData(0,0,sw,sh);
+ const data=imageData.data;
+
+ for(let i=0;i<data.length;i+=4){
+  if(data[i]>235&&data[i+1]>235&&data[i+2]>235){
+   data[i+3]=0;
+  }
+ }
+
+ sctx.putImageData(imageData,0,0);
  spriteReady=true;
 };
 
 defenderImage.onerror=function(){
- console.log("defender_new.pngを読み込めませんでした。");
+ console.log("defender.pngを読み込めませんでした。");
 };
 
 // ===================================
@@ -164,19 +181,24 @@ const select=document.getElementById("select");
 const help=document.getElementById("help");
 const pauseMenu=document.getElementById("pauseMenu");
 const result=document.getElementById("result");
+
 const bossbar=document.getElementById("bossbar");
 const bossfill=document.getElementById("bossfill");
-const spell=document.getElementById("spell");
+const spellText=document.getElementById("spellText");
 
 function showPanel(panel){
- [menu,select,help,pauseMenu,result].forEach(p=>p.classList.add("hidden"));
+ menu.classList.add("hidden");
+ select.classList.add("hidden");
+ help.classList.add("hidden");
+ pauseMenu.classList.add("hidden");
+ result.classList.add("hidden");
  panel.classList.remove("hidden");
  overlay.classList.remove("hidden");
 }
 
 function showTitle(){
  showPanel(menu);
- document.querySelector("#menu h2").textContent="紅月弾幕録 Ver.3.4";
+ document.querySelector("#menu h2").textContent="紅月弾幕録 Ver.4.0";
  document.querySelector("#menu p").textContent="氷の守護者、出撃。";
 }
 
@@ -184,36 +206,57 @@ let difficulty=0;
 let highscore=Number(localStorage.getItem("defenderHighscore")||0);
 document.getElementById("highscore").textContent="HIGH SCORE : "+highscore;
 
-document.getElementById("newGame").onclick=()=>showPanel(select);
-document.getElementById("instructions").onclick=()=>showPanel(help);
-document.getElementById("helpBack").onclick=showTitle;
-document.getElementById("back").onclick=showTitle;
+document.getElementById("newGame").addEventListener("click",()=>showPanel(select));
+document.getElementById("instructions").addEventListener("click",()=>showPanel(help));
+document.getElementById("helpBack").addEventListener("click",showTitle);
+document.getElementById("back").addEventListener("click",showTitle);
 
 document.querySelectorAll("[data-diff]").forEach(button=>{
- button.onclick=()=>{
+ button.addEventListener("click",()=>{
   difficulty=Number(button.dataset.diff);
   document.querySelectorAll("[data-diff]").forEach(b=>b.classList.remove("selected"));
   button.classList.add("selected");
- };
+ });
 });
 
 // ===================================
 // ゲームデータ
 // ===================================
 
-let running=false,paused=false;
-let frame=0,score=0,stage=1,lives=3,bombs=3,spellCards=3;
-let enemies=[],bullets=[],enemyBullets=[],electricOrbs=[],particles=[];
+let running=false;
+let paused=false;
+let frame=0;
+let score=0;
+let stage=1;
+let lives=3;
+let bombs=3;
+let souls=0;
+
+let enemies=[];
+let bullets=[];
+let enemyBullets=[];
+let particles=[];
+let soulDrops=[];
+let spellBalls=[];
 let shockwaves=[];
-let boss=null,spawnTimer=0,stageMessage=0,accumulator=0;
-let spellMessageTimer=0;
+let boss=null;
+
+let spawnTimer=0;
+let stageMessage=0;
+let bombCooldown=0;
+let spellInvincible=0;
+let spellTextTimer=0;
 
 const player={
- x:0,y:0,vx:0,vy:0,
+ x:0,y:0,
+ vx:0,vy:0,
  lastX:0,lastY:-1,
- speed:3.6,radius:4,
- invincible:0,spellInvincible:0,
- dashCooldown:0,dashTime:0,shotTimer:0
+ speed:3.6,
+ radius:4,
+ invincible:0,
+ dashCooldown:0,
+ dashTime:0,
+ shotTimer:0
 };
 
 const keys={};
@@ -237,6 +280,7 @@ addEventListener("keydown",e=>{
   if(k==="z")useSpell();
   if(k==="escape")togglePause();
  }
+
  keys[k]=true;
 });
 
@@ -305,7 +349,8 @@ document.getElementById("spellButton").addEventListener("pointerdown",e=>{
 });
 
 function getInput(){
- let x=joy.x,y=joy.y;
+ let x=joy.x;
+ let y=joy.y;
 
  if(keys["arrowleft"]||keys["a"])x-=1;
  if(keys["arrowright"]||keys["d"])x+=1;
@@ -314,6 +359,7 @@ function getInput(){
 
  const len=Math.hypot(x,y);
  if(len>1){x/=len;y/=len;}
+
  return {x,y};
 }
 
@@ -321,14 +367,15 @@ function getInput(){
 // ゲーム開始
 // ===================================
 
-document.getElementById("begin").onclick=startGame;
+document.getElementById("begin").addEventListener("click",startGame);
 
 function startGame(){
  enemies=[];
  bullets=[];
  enemyBullets=[];
- electricOrbs=[];
  particles=[];
+ soulDrops=[];
+ spellBalls=[];
  shockwaves=[];
  boss=null;
 
@@ -336,14 +383,16 @@ function startGame(){
  stage=1;
  lives=3;
  bombs=3;
- spellCards=3;
+ souls=0;
  frame=0;
  spawnTimer=0;
  stageMessage=160;
- spellMessageTimer=0;
  paused=false;
  running=true;
- accumulator=0;
+
+ bombCooldown=0;
+ spellInvincible=0;
+ spellTextTimer=0;
 
  player.x=W/2;
  player.y=H*.78;
@@ -352,13 +401,13 @@ function startGame(){
  player.vx=0;
  player.vy=0;
  player.invincible=120;
- player.spellInvincible=0;
  player.dashCooldown=0;
  player.dashTime=0;
  player.shotTimer=0;
 
  bossbar.style.display="none";
- spell.style.display="none";
+ spellText.style.display="none";
+
  overlay.classList.add("hidden");
  updateHUD();
 }
@@ -370,7 +419,9 @@ function startGame(){
 function useDash(){
  if(!running||paused||player.dashCooldown>0)return;
 
- let dx=player.lastX,dy=player.lastY;
+ let dx=player.lastX;
+ let dy=player.lastY;
+
  if(Math.hypot(dx,dy)<.1)dy=-1;
 
  const len=Math.hypot(dx,dy);
@@ -395,82 +446,26 @@ function useDash(){
 
 // ===================================
 // ボム
+// 敵弾だけを消す。敵にはダメージなし。
+// クールダウンは10秒。
 // ===================================
 
 function useBomb(){
- if(!running||paused||bombs<=0)return;
+ if(!running||paused||bombs<=0||bombCooldown>0)return;
 
  bombs--;
+ bombCooldown=600;
+
  enemyBullets=[];
 
- enemies.forEach(e=>e.hp-=5);
- if(boss)boss.hp-=35;
-
- for(let i=0;i<70;i++){
-  const a=Math.random()*Math.PI*2;
-  const s=Math.random()*8+2;
-  particles.push({
-   x:player.x,y:player.y,
-   vx:Math.cos(a)*s,vy:Math.sin(a)*s,
-   life:35,color:"#a9eaff"
-  });
- }
- updateHUD();
-}
-
-// ===================================
-// スペルカード「本能解放」
-// ===================================
-
-function useSpell(){
- if(!running||paused||spellCards<=0)return;
-
- spellCards--;
-
- // 10秒間、敵弾によるダメージを無効化
- player.spellInvincible=600;
-
- // 発動文字
- spell.textContent="本能解放";
- spell.style.display="block";
- spellMessageTimer=150;
-
- // 波紋レーザーを発生
- shockwaves.push({
-  x:player.x,
-  y:player.y,
-  radius:10,
-  speed:9,
-  maxRadius:Math.max(W,H)*1.2,
-  width:30,
-  hitEnemies:new Set()
- });
-
- // 電気を帯びた大きな球を3発発射
- const angles=[-.2,0,.2];
-
- for(let i=0;i<3;i++){
-  electricOrbs.push({
-   x:player.x,
-   y:player.y-30,
-   vx:Math.sin(angles[i])*2.2,
-   vy:-8.5,
-   radius:23,
-   damage:25,
-   life:180,
-   dead:false
-  });
- }
-
- // 発動時の光
  for(let i=0;i<45;i++){
   const a=Math.random()*Math.PI*2;
-  const s=Math.random()*7+2;
+  const s=Math.random()*5+1;
   particles.push({
    x:player.x,y:player.y,
    vx:Math.cos(a)*s,
    vy:Math.sin(a)*s,
-   life:38,color:"#b7a0ff"
+   life:30,color:"#8bdfff"
   });
  }
 
@@ -478,7 +473,62 @@ function useSpell(){
 }
 
 // ===================================
-// 通常ショット・敵弾
+// スペルカード
+// ===================================
+
+function useSpell(){
+ if(!running||paused||souls<10)return;
+
+ souls-=10;
+
+ // 10秒間、敵弾から無敵
+ spellInvincible=600;
+ player.invincible=Math.max(player.invincible,600);
+
+ // 発動文字
+ spellText.textContent="本能解放";
+ spellText.style.display="block";
+ spellTextTimer=110;
+
+ // 波紋レーザー
+ shockwaves.push({
+  x:player.x,
+  y:player.y,
+  radius:10,
+  maxRadius:Math.max(W,H)*1.2,
+  speed:2.1,
+  hitEnemies:[]
+ });
+
+ // 大きな電気球を3発
+ for(let i=-1;i<=1;i++){
+  spellBalls.push({
+   x:player.x+i*24,
+   y:player.y-30,
+   vx:i*.45,
+   vy:-2.1,
+   radius:24,
+   damage:12,
+   life:260,
+   phase:Math.random()*10
+  });
+ }
+
+ for(let i=0;i<30;i++){
+  const a=Math.random()*Math.PI*2;
+  particles.push({
+   x:player.x,y:player.y,
+   vx:Math.cos(a)*4,
+   vy:Math.sin(a)*4,
+   life:35,color:"#b8eaff"
+  });
+ }
+
+ updateHUD();
+}
+
+// ===================================
+// ショットと敵弾
 // ===================================
 
 function shoot(){
@@ -514,10 +564,42 @@ function aimedBullet(x,y,speed,offset=0){
 function circlePattern(x,y,count,speed,offset,color){
  for(let i=0;i<count;i++){
   const a=(Math.PI*2/count)*i+offset;
-  spawnEnemyBullet(
-   x,y,Math.cos(a)*speed,Math.sin(a)*speed,color||"#72dfff",5
-  );
+  spawnEnemyBullet(x,y,Math.cos(a)*speed,Math.sin(a)*speed,color,5);
  }
+}
+
+// ===================================
+// ソウルドロップ
+// ===================================
+
+function dropSoul(x,y){
+ soulDrops.push({
+  x,y,
+  vx:(Math.random()-.5)*1.4,
+  vy:1.1,
+  phase:Math.random()*6,
+  life:900
+ });
+}
+
+function updateSoulDrops(){
+ for(const s of soulDrops){
+  s.x+=s.vx+Math.sin(frame*.04+s.phase)*.45;
+  s.y+=s.vy;
+  s.vx*=.99;
+  s.life--;
+
+  // 自機に近づくと回収
+  if(Math.hypot(s.x-player.x,s.y-player.y)<23){
+   if(souls<10){
+    souls++;
+    score+=50;
+   }
+   s.dead=true;
+  }
+ }
+
+ soulDrops=soulDrops.filter(s=>!s.dead&&s.life>0&&s.y<H+30);
 }
 
 // ===================================
@@ -533,8 +615,8 @@ function createBoss(){
  };
 
  bossbar.style.display="block";
- spell.style.display="block";
- spell.textContent=stage===1?
+ spellText.style.display="block";
+ spellText.textContent=stage===1?
   "氷符「凍てつく守護壁」":
   "絶対零度「蒼氷の世界」";
 }
@@ -546,10 +628,16 @@ function bossAttack(){
  const speed=difficulty===0?1.7:difficulty===1?2.3:2.9;
 
  if(stage===1){
-  if(t%65===0)circlePattern(boss.x,boss.y+20,14,speed,t*.025,"#72dfff");
-  if(t%32===0)aimedBullet(boss.x,boss.y+20,speed+1);
+  if(t%65===0){
+   circlePattern(boss.x,boss.y+20,14,speed,t*.025,"#72dfff");
+  }
+  if(t%32===0){
+   aimedBullet(boss.x,boss.y+20,speed+1);
+  }
  }else{
-  if(t%45===0)circlePattern(boss.x,boss.y+20,20,speed,t*.04,"#7aafff");
+  if(t%45===0){
+   circlePattern(boss.x,boss.y+20,20,speed,t*.04,"#7aafff");
+  }
   if(t%22===0){
    aimedBullet(boss.x-25,boss.y+15,speed+1,-.16);
    aimedBullet(boss.x+25,boss.y+15,speed+1,.16);
@@ -563,15 +651,16 @@ function bossAttack(){
 
 function nextStage(){
  stage++;
+
  boss=null;
  enemies=[];
  enemyBullets=[];
  bullets=[];
- electricOrbs=[];
+ spellBalls=[];
  shockwaves=[];
 
  bossbar.style.display="none";
- spell.style.display="none";
+ spellText.style.display="none";
 
  player.invincible=150;
  player.x=W/2;
@@ -587,7 +676,7 @@ function nextStage(){
 function clearGame(){
  running=false;
  bossbar.style.display="none";
- spell.style.display="none";
+ spellText.style.display="none";
 
  if(score>highscore){
   highscore=score;
@@ -597,11 +686,12 @@ function clearGame(){
  document.getElementById("highscore").textContent="HIGH SCORE : "+highscore;
  document.getElementById("resultTitle").textContent="ALL STAGE CLEAR!";
  document.getElementById("resultText").textContent="SCORE : "+score;
+
  showPanel(result);
 }
 
 // ===================================
-// 衝突判定・ダメージ
+// 衝突判定
 // ===================================
 
 function hit(a,b,r){
@@ -609,7 +699,7 @@ function hit(a,b,r){
 }
 
 function damagePlayer(){
- if(player.invincible>0||player.spellInvincible>0)return;
+ if(player.invincible>0||spellInvincible>0)return;
 
  lives--;
  player.invincible=110;
@@ -625,7 +715,7 @@ function damagePlayer(){
 function endGame(){
  running=false;
  bossbar.style.display="none";
- spell.style.display="none";
+ spellText.style.display="none";
 
  if(score>highscore){
   highscore=score;
@@ -635,16 +725,17 @@ function endGame(){
  document.getElementById("highscore").textContent="HIGH SCORE : "+highscore;
  document.getElementById("resultTitle").textContent="GAME OVER";
  document.getElementById("resultText").textContent="SCORE : "+score;
+
  showPanel(result);
 }
 
-document.getElementById("retry").onclick=startGame;
+document.getElementById("retry").addEventListener("click",startGame);
 
-document.getElementById("titleButton").onclick=()=>{
+document.getElementById("titleButton").addEventListener("click",()=>{
  running=false;
  paused=false;
  showTitle();
-};
+});
 
 // ===================================
 // ポーズ
@@ -652,22 +743,26 @@ document.getElementById("titleButton").onclick=()=>{
 
 function togglePause(){
  if(!running)return;
+
  paused=!paused;
 
- if(paused)showPanel(pauseMenu);
- else overlay.classList.add("hidden");
+ if(paused){
+  showPanel(pauseMenu);
+ }else{
+  overlay.classList.add("hidden");
+ }
 }
 
-document.getElementById("resume").onclick=()=>{
+document.getElementById("resume").addEventListener("click",()=>{
  paused=false;
  overlay.classList.add("hidden");
-};
+});
 
-document.getElementById("quit").onclick=()=>{
+document.getElementById("quit").addEventListener("click",()=>{
  running=false;
  paused=false;
  showTitle();
-};
+});
 
 // ===================================
 // HUD
@@ -678,13 +773,16 @@ function updateHUD(){
  document.getElementById("life").textContent="LIFE : "+lives;
  document.getElementById("bombs").textContent="BOMB : "+bombs;
  document.getElementById("bombCount").textContent=bombs;
- document.getElementById("spellCount").textContent="SPELL : "+spellCards;
- document.getElementById("spellButton").innerHTML="SPELL<br><small>Z / "+spellCards+"</small>";
+ document.getElementById("soul").textContent="SOUL : "+souls+" / 10";
+ document.getElementById("spellCount").textContent=souls+" / 10";
  document.getElementById("stage").textContent="STAGE : "+stage;
 
- document.getElementById("protection").textContent=
-  player.spellInvincible>0?
-  "本能解放 防御残り："+(player.spellInvincible/60).toFixed(1)+"秒":"";
+ document.getElementById("cooldown").textContent=
+  bombCooldown>0?
+  "BOMB : "+(bombCooldown/60).toFixed(1)+"秒":
+  "BOMB : READY";
+
+ document.getElementById("spellButton").disabled=souls<10;
 }
 
 // ===================================
@@ -695,6 +793,13 @@ function update(){
  if(!running||paused)return;
 
  frame++;
+
+ if(bombCooldown>0)bombCooldown--;
+ if(spellInvincible>0)spellInvincible--;
+ if(spellTextTimer>0){
+  spellTextTimer--;
+  if(spellTextTimer===0)spellText.style.display="none";
+ }
 
  const input=getInput();
  const slow=keys["shift"];
@@ -716,17 +821,11 @@ function update(){
   }
  }
 
- player.x=Math.max(24,Math.min(W-24,player.x));
- player.y=Math.max(44,Math.min(H-44,player.y));
+ player.x=Math.max(15,Math.min(W-15,player.x));
+ player.y=Math.max(35,Math.min(H-25,player.y));
 
  if(player.invincible>0)player.invincible--;
- if(player.spellInvincible>0)player.spellInvincible--;
  if(player.dashCooldown>0)player.dashCooldown--;
-
- if(spellMessageTimer>0){
-  spellMessageTimer--;
-  if(spellMessageTimer===0)spell.style.display="none";
- }
 
  player.shotTimer++;
  if(player.shotTimer%9===0)shoot();
@@ -757,7 +856,6 @@ function update(){
   boss.timer++;
   boss.x=W/2+Math.sin(boss.timer*.012)*W*.27;
   bossAttack();
-
   bossfill.style.width=Math.max(0,boss.hp/boss.maxHp*100)+"%";
 
   if(boss.hp<=0){
@@ -798,51 +896,45 @@ function update(){
 
  bullets=bullets.filter(b=>!b.dead&&b.y>-20);
 
- // 電気の球
- for(const orb of electricOrbs){
-  orb.x+=orb.vx;
-  orb.y+=orb.vy;
-  orb.life--;
+ // スペルカードの電気球
+ for(const b of spellBalls){
+  b.x+=b.vx+Math.sin(frame*.04+b.phase)*.25;
+  b.y+=b.vy;
+  b.life--;
 
+  // 雑魚敵に当たった場合
   for(const e of enemies){
-   if(!orb.dead&&hit(orb,e,orb.radius+14)){
-    e.hp-=orb.damage;
-    orb.dead=true;
-    score+=100;
+   if(!b.dead&&hit(b,e,b.radius+14)){
+    e.hp-=b.damage;
+    b.dead=true;
+    break;
    }
   }
 
-  if(!orb.dead&&boss&&hit(orb,boss,orb.radius+37)){
-   boss.hp-=orb.damage;
-   orb.dead=true;
-   score+=50;
+  // ボスにもダメージ
+  if(!b.dead&&boss&&hit(b,boss,b.radius+37)){
+   boss.hp-=b.damage;
+   b.dead=true;
   }
 
-  if(orb.life<=0||orb.y<-40)orb.dead=true;
+  if(b.life<=0||b.y<-60)b.dead=true;
  }
- electricOrbs=electricOrbs.filter(o=>!o.dead);
 
- // =================================
- // 波紋レーザーの更新・敵撃破
- // =================================
+ spellBalls=spellBalls.filter(b=>!b.dead);
 
+ // 波紋レーザー
  for(const wave of shockwaves){
   const oldRadius=wave.radius;
   wave.radius+=wave.speed;
 
   for(const e of enemies){
-   if(wave.hitEnemies.has(e))continue;
+   if(wave.hitEnemies.includes(e))continue;
 
-   const distance=Math.hypot(e.x-wave.x,e.y-wave.y);
+   const d=Math.hypot(e.x-wave.x,e.y-wave.y);
 
-   // 波紋の輪が敵に触れた瞬間に撃破
-   if(
-    distance>=oldRadius-wave.width/2-14 &&
-    distance<=wave.radius+wave.width/2+14
-   ){
+   if(d>=oldRadius-18&&d<=wave.radius+18){
     e.hp=0;
-    wave.hitEnemies.add(e);
-    score+=100;
+    wave.hitEnemies.push(e);
    }
   }
  }
@@ -854,11 +946,7 @@ function update(){
   b.x+=b.vx;
   b.y+=b.vy;
 
-  if(
-   hit(b,player,b.r+player.radius)&&
-   player.invincible<=0&&
-   player.spellInvincible<=0
-  ){
+  if(hit(b,player,b.r+player.radius)&&player.invincible<=0&&spellInvincible<=0){
    damagePlayer();
    b.dead=true;
   }
@@ -870,21 +958,28 @@ function update(){
 
  // 敵との接触
  for(const e of enemies){
-  if(hit(e,player,17)&&player.invincible<=0){
+  if(hit(e,player,17)&&player.invincible<=0&&spellInvincible<=0){
    damagePlayer();
   }
  }
 
- if(boss&&hit(boss,player,42)&&player.invincible<=0){
+ if(boss&&hit(boss,player,42)&&player.invincible<=0&&spellInvincible<=0){
   damagePlayer();
  }
 
- // 敵撃破
+ // 雑魚敵撃破とソウル出現
  for(const e of enemies){
-  if(e.hp<=0)score+=0;
+  if(e.hp<=0&&!e.rewarded){
+   e.rewarded=true;
+   score+=100;
+   dropSoul(e.x,e.y);
+  }
  }
 
  enemies=enemies.filter(e=>e.hp>0&&e.y<H+50);
+
+ // ソウル回収
+ updateSoulDrops();
 
  // パーティクル
  for(const p of particles){
@@ -903,7 +998,7 @@ function update(){
 }
 
 // ===================================
-// 背景
+// 描画
 // ===================================
 
 function drawBackground(){
@@ -928,26 +1023,17 @@ function drawBackground(){
  ctx.fill();
 }
 
-// ===================================
-// 自機
-// ===================================
-
 function drawPlayer(){
  ctx.save();
 
- if(player.invincible>0&&Math.floor(frame/5)%2===0){
-  ctx.globalAlpha=.4;
- }
-
- if(player.spellInvincible>0){
-  ctx.shadowColor="#a77bff";
-  ctx.shadowBlur=18;
+ if((player.invincible>0||spellInvincible>0)&&Math.floor(frame/5)%2===0){
+  ctx.globalAlpha=.5;
  }
 
  if(spriteReady){
   const sw=spriteCanvas.width;
   const sh=spriteCanvas.height;
-  const scale=Math.min(48/sw,88/sh);
+  const scale=Math.min(58/sw,108/sh);
   const drawW=sw*scale;
   const drawH=sh*scale;
 
@@ -966,6 +1052,7 @@ function drawPlayer(){
 
  ctx.restore();
 
+ // 当たり判定の中心
  ctx.beginPath();
  ctx.arc(player.x,player.y,player.radius,0,Math.PI*2);
  ctx.fillStyle="#ffffff";
@@ -978,129 +1065,28 @@ function drawPlayer(){
   ctx.stroke();
  }
 
- if(player.spellInvincible>0){
-  ctx.save();
+ if(spellInvincible>0){
   ctx.beginPath();
-  ctx.arc(player.x,player.y,30+Math.sin(frame*.15)*3,0,Math.PI*2);
-  ctx.strokeStyle="#b58aff";
+  ctx.arc(player.x,player.y,35,0,Math.PI*2);
+  ctx.strokeStyle="#b8eaff99";
   ctx.lineWidth=3;
-  ctx.shadowColor="#a77bff";
-  ctx.shadowBlur=15;
   ctx.stroke();
-  ctx.restore();
  }
 }
 
-// ===================================
-// 通常弾：菱形
-// ===================================
-
-function drawPlayerBullets(){
+// 菱形の通常弾
+function drawBullets(){
  for(const b of bullets){
   ctx.save();
   ctx.translate(b.x,b.y);
   ctx.rotate(Math.PI/4);
   ctx.fillStyle="#a8eeff";
-  ctx.shadowColor="#72dfff";
+  ctx.shadowColor="#66dfff";
   ctx.shadowBlur=8;
   ctx.fillRect(-4,-4,8,8);
   ctx.restore();
  }
-}
 
-// ===================================
-// 電気の球
-// ===================================
-
-function drawElectricOrbs(){
- for(const orb of electricOrbs){
-  ctx.save();
-  ctx.shadowColor="#62dfff";
-  ctx.shadowBlur=30;
-
-  const gradient=ctx.createRadialGradient(
-   orb.x-6,orb.y-7,2,
-   orb.x,orb.y,orb.radius
-  );
-
-  gradient.addColorStop(0,"#ffffff");
-  gradient.addColorStop(.35,"#b9f5ff");
-  gradient.addColorStop(.7,"#48bfff");
-  gradient.addColorStop(1,"#2455d9");
-
-  ctx.fillStyle=gradient;
-  ctx.beginPath();
-  ctx.arc(orb.x,orb.y,orb.radius,0,Math.PI*2);
-  ctx.fill();
-
-  ctx.strokeStyle="#e6ffff";
-  ctx.lineWidth=3;
-  ctx.shadowColor="#a9f5ff";
-  ctx.shadowBlur=18;
-
-  for(let j=0;j<4;j++){
-   const a=frame*.12+j*1.6;
-   const x1=orb.x+Math.cos(a)*orb.radius*.7;
-   const y1=orb.y+Math.sin(a)*orb.radius*.7;
-   const x2=orb.x+Math.cos(a+.7)*orb.radius*1.5;
-   const y2=orb.y+Math.sin(a+.7)*orb.radius*1.5;
-
-   ctx.beginPath();
-   ctx.moveTo(x1,y1);
-   ctx.lineTo(x2,y2);
-   ctx.lineTo(x2+Math.cos(a+1.4)*7,y2+Math.sin(a+1.4)*7);
-   ctx.stroke();
-  }
-
-  ctx.restore();
- }
-}
-
-// ===================================
-// 波紋レーザー
-// ===================================
-
-function drawShockwaves(){
- for(const wave of shockwaves){
-  ctx.save();
-
-  // 外側の光
-  ctx.beginPath();
-  ctx.arc(wave.x,wave.y,wave.radius,0,Math.PI*2);
-  ctx.strokeStyle="#8c65ff";
-  ctx.lineWidth=wave.width+12;
-  ctx.globalAlpha=.22;
-  ctx.shadowColor="#a77bff";
-  ctx.shadowBlur=30;
-  ctx.stroke();
-
-  // 中心のレーザー輪
-  ctx.beginPath();
-  ctx.arc(wave.x,wave.y,wave.radius,0,Math.PI*2);
-  ctx.globalAlpha=.95;
-  ctx.strokeStyle="#e6dcff";
-  ctx.lineWidth=wave.width;
-  ctx.shadowColor="#b58aff";
-  ctx.shadowBlur=24;
-  ctx.stroke();
-
-  // 内側の白い光
-  ctx.beginPath();
-  ctx.arc(wave.x,wave.y,wave.radius,0,Math.PI*2);
-  ctx.strokeStyle="#ffffff";
-  ctx.lineWidth=4;
-  ctx.globalAlpha=1;
-  ctx.stroke();
-
-  ctx.restore();
- }
-}
-
-// ===================================
-// 敵・敵弾・ボス
-// ===================================
-
-function drawEnemyBullets(){
  for(const b of enemyBullets){
   ctx.fillStyle=b.color;
   ctx.beginPath();
@@ -1108,6 +1094,100 @@ function drawEnemyBullets(){
   ctx.fill();
   ctx.strokeStyle="#ffffff66";
   ctx.stroke();
+ }
+}
+
+// 電気を帯びた大きな球
+function drawSpellBalls(){
+ for(const b of spellBalls){
+  ctx.save();
+
+  ctx.shadowColor="#5eeaff";
+  ctx.shadowBlur=25;
+
+  const gradient=ctx.createRadialGradient(
+   b.x-b.radius*.25,b.y-b.radius*.25,2,
+   b.x,b.y,b.radius
+  );
+
+  gradient.addColorStop(0,"#ffffff");
+  gradient.addColorStop(.3,"#c9faff");
+  gradient.addColorStop(.7,"#38bfff");
+  gradient.addColorStop(1,"#1762c9");
+
+  ctx.fillStyle=gradient;
+  ctx.beginPath();
+  ctx.arc(b.x,b.y,b.radius,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.strokeStyle="#eaffff";
+  ctx.lineWidth=3;
+  ctx.beginPath();
+  ctx.arc(b.x,b.y,b.radius+3,0,Math.PI*2);
+  ctx.stroke();
+
+  // 電気のきらめき
+  for(let i=0;i<4;i++){
+   const a=frame*.12+i*Math.PI/2+b.phase;
+   ctx.strokeStyle="#dfffff";
+   ctx.lineWidth=2;
+   ctx.beginPath();
+   ctx.moveTo(b.x+Math.cos(a)*b.radius*.7,b.y+Math.sin(a)*b.radius*.7);
+   ctx.lineTo(b.x+Math.cos(a+.4)*(b.radius+10),b.y+Math.sin(a+.4)*(b.radius+10));
+   ctx.stroke();
+  }
+
+  ctx.restore();
+ }
+}
+
+// 波紋レーザー
+function drawShockwaves(){
+ for(const w of shockwaves){
+  ctx.save();
+
+  ctx.beginPath();
+  ctx.arc(w.x,w.y,w.radius,0,Math.PI*2);
+  ctx.strokeStyle="#a9f4ff";
+  ctx.lineWidth=9;
+  ctx.shadowColor="#48dfff";
+  ctx.shadowBlur=25;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(w.x,w.y,w.radius,0,Math.PI*2);
+  ctx.strokeStyle="#ffffff";
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  ctx.restore();
+ }
+}
+
+// ソウル
+function drawSouls(){
+ for(const s of soulDrops){
+  ctx.save();
+  ctx.translate(s.x,s.y);
+  ctx.rotate(frame*.04+s.phase);
+
+  ctx.shadowColor="#d8aaff";
+  ctx.shadowBlur=15;
+  ctx.fillStyle="#d9b5ff";
+
+  ctx.beginPath();
+  ctx.moveTo(0,-9);
+  ctx.lineTo(7,0);
+  ctx.lineTo(0,9);
+  ctx.lineTo(-7,0);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle="#ffffff";
+  ctx.lineWidth=1.5;
+  ctx.stroke();
+
+  ctx.restore();
  }
 }
 
@@ -1140,6 +1220,7 @@ function drawBoss(){
  ctx.beginPath();
  ctx.arc(boss.x,boss.y,12,0,Math.PI*2);
  ctx.fill();
+
  ctx.restore();
 }
 
@@ -1163,25 +1244,21 @@ function drawStageMessage(){
  ctx.font="bold 28px sans-serif";
  ctx.shadowColor="#168bdc";
  ctx.shadowBlur=15;
+
  ctx.fillText("STAGE "+stage,W/2,H*.42);
 
  ctx.font="16px sans-serif";
  ctx.fillText(stage===1?"氷の守護者":"蒼氷の世界",W/2,H*.42+35);
+
  ctx.restore();
 }
 
-// ===================================
-// 描画
-// ===================================
-
 function draw(){
  drawBackground();
-
- drawPlayerBullets();
- drawEnemyBullets();
- drawElectricOrbs();
  drawShockwaves();
-
+ drawSouls();
+ drawSpellBalls();
+ drawBullets();
  drawEnemies();
  drawBoss();
  drawParticles();
@@ -1205,6 +1282,7 @@ function draw(){
 // ===================================
 
 let lastTime=0;
+let accumulator=0;
 
 function loop(time){
  if(!lastTime)lastTime=time;
@@ -1214,6 +1292,7 @@ function loop(time){
 
  if(running&&!paused){
   accumulator+=delta;
+
   while(accumulator>=1){
    update();
    accumulator--;
