@@ -4,13 +4,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>幻想紅月夜 Ver.3.3</title>
+<title>幻想紅月夜 Ver.3.4</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#080817;color:white;font-family:sans-serif;overflow:hidden;touch-action:none}
 canvas{width:100vw;height:100dvh;display:block;touch-action:none}
 #hud{position:fixed;top:8px;left:10px;z-index:2;pointer-events:none;text-shadow:0 1px 5px black;font-size:13px;line-height:1.7}
-#bossbar{position:fixed;top:115px;left:8%;width:84%;height:10px;background:#333;border:1px solid #aaa;display:none;z-index:2}
+#bossbar{position:fixed;top:130px;left:8%;width:84%;height:10px;background:#333;border:1px solid #aaa;display:none;z-index:2}
 #bossfill{height:100%;width:100%;background:#55caff}
 #spell{position:fixed;top:34%;left:0;width:100%;text-align:center;color:#c5f2ff;font-size:28px;font-weight:bold;text-shadow:0 0 15px #27aaff,0 0 30px #168bdc;z-index:4;pointer-events:none;display:none}
 #overlay{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:linear-gradient(#080817ed,#18102aee);padding:18px;overflow:auto}
@@ -33,13 +33,14 @@ button.selected{background:#2586bd;border:2px solid white}
 <body>
 
 <div id="hud">
- <div>幻想紅月夜 Ver.3.3</div>
+ <div>幻想紅月夜 Ver.3.4</div>
  <div>PLAYER : ディフェンダー</div>
  <div id="score">SCORE : 0</div>
  <div id="life">LIFE : 3</div>
  <div id="bombs">BOMB : 3</div>
  <div id="spellCount">SPELL : 3</div>
  <div id="stage">STAGE : 1</div>
+ <div id="protection"></div>
 </div>
 
 <div id="bossbar"><div id="bossfill"></div></div>
@@ -53,7 +54,7 @@ button.selected{background:#2586bd;border:2px solid white}
 
 <div id="overlay">
  <h1>幻想紅月夜</h1>
- <h2>紅月弾幕録 Ver.3.3</h2>
+ <h2>紅月弾幕録 Ver.3.4</h2>
  <p>氷の守護者、出撃。</p>
 
  <div id="menu">
@@ -64,9 +65,7 @@ button.selected{background:#2586bd;border:2px solid white}
 
  <div id="select" class="hidden">
   <h2>自機選択</h2>
-  <div id="choices">
-   <button class="selected">❄ ディフェンダー</button>
-  </div>
+  <div id="choices"><button class="selected">❄ ディフェンダー</button></div>
   <p>落ち着いた性格。氷を扱う守護者。</p>
   <p class="small">セリフ：後日設定予定</p>
   <h2>難易度</h2>
@@ -86,7 +85,7 @@ button.selected{background:#2586bd;border:2px solid white}
   <p>X：ダッシュ</p>
   <p>C：ボム</p>
   <p>Z：スペルカード「本能解放」</p>
-  <p>スペルカード：敵弾を10秒間無効化し、電気の球を3発発射</p>
+  <p>敵弾を10秒間無効化。波紋レーザーと電気球3発を発射。</p>
   <p>ESC：ポーズ</p>
   <p>iPad：左下の操作盤と右下のボタン</p>
   <button id="helpBack">戻る</button>
@@ -110,14 +109,13 @@ button.selected{background:#2586bd;border:2px solid white}
 "use strict";
 
 // ===================================
-// 画面とキャンバス
+// 画面
 // ===================================
 
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
 
-let W=innerWidth,H=innerHeight;
-let DPR=1;
+let W=innerWidth,H=innerHeight,DPR=1;
 
 function resize(){
  W=innerWidth;
@@ -132,28 +130,23 @@ resize();
 
 // ===================================
 // 自機画像
-// defender_new.png を使用
 // ===================================
 
 const defenderImage=new Image();
 defenderImage.src="defender_new.png";
 
-let spriteCanvas=document.createElement("canvas");
+const spriteCanvas=document.createElement("canvas");
 let spriteReady=false;
 
 defenderImage.onload=function(){
  const sw=defenderImage.width;
  const sh=defenderImage.height;
-
- if(sw<=0||sh<=0)return;
+ if(!sw||!sh)return;
 
  spriteCanvas.width=sw;
  spriteCanvas.height=sh;
-
  const sctx=spriteCanvas.getContext("2d");
- sctx.clearRect(0,0,sw,sh);
  sctx.drawImage(defenderImage,0,0);
-
  spriteReady=true;
 };
 
@@ -171,90 +164,56 @@ const select=document.getElementById("select");
 const help=document.getElementById("help");
 const pauseMenu=document.getElementById("pauseMenu");
 const result=document.getElementById("result");
-
 const bossbar=document.getElementById("bossbar");
 const bossfill=document.getElementById("bossfill");
 const spell=document.getElementById("spell");
 
 function showPanel(panel){
- menu.classList.add("hidden");
- select.classList.add("hidden");
- help.classList.add("hidden");
- pauseMenu.classList.add("hidden");
- result.classList.add("hidden");
+ [menu,select,help,pauseMenu,result].forEach(p=>p.classList.add("hidden"));
  panel.classList.remove("hidden");
  overlay.classList.remove("hidden");
 }
 
 function showTitle(){
  showPanel(menu);
- overlay.classList.remove("hidden");
- document.querySelector("#menu h2").textContent="紅月弾幕録 Ver.3.3";
+ document.querySelector("#menu h2").textContent="紅月弾幕録 Ver.3.4";
  document.querySelector("#menu p").textContent="氷の守護者、出撃。";
- document.getElementById("newGame").textContent="GAME START";
 }
 
 let difficulty=0;
 let highscore=Number(localStorage.getItem("defenderHighscore")||0);
 document.getElementById("highscore").textContent="HIGH SCORE : "+highscore;
 
-document.getElementById("newGame").addEventListener("click",function(){
- showPanel(select);
-});
+document.getElementById("newGame").onclick=()=>showPanel(select);
+document.getElementById("instructions").onclick=()=>showPanel(help);
+document.getElementById("helpBack").onclick=showTitle;
+document.getElementById("back").onclick=showTitle;
 
-document.getElementById("instructions").addEventListener("click",function(){
- showPanel(help);
-});
-
-document.getElementById("helpBack").addEventListener("click",showTitle);
-document.getElementById("back").addEventListener("click",showTitle);
-
-document.querySelectorAll("[data-diff]").forEach(function(button){
- button.addEventListener("click",function(){
+document.querySelectorAll("[data-diff]").forEach(button=>{
+ button.onclick=()=>{
   difficulty=Number(button.dataset.diff);
-  document.querySelectorAll("[data-diff]").forEach(function(b){
-   b.classList.remove("selected");
-  });
+  document.querySelectorAll("[data-diff]").forEach(b=>b.classList.remove("selected"));
   button.classList.add("selected");
- });
+ };
 });
 
 // ===================================
 // ゲームデータ
 // ===================================
 
-let running=false;
-let paused=false;
-let frame=0;
-let score=0;
-let stage=1;
-let lives=3;
-let bombs=3;
-let spellCards=3;
-
-let enemies=[];
-let bullets=[];
-let enemyBullets=[];
-let electricOrbs=[];
-let particles=[];
-
-let boss=null;
-let spawnTimer=0;
-let stageMessage=0;
-let accumulator=0;
+let running=false,paused=false;
+let frame=0,score=0,stage=1,lives=3,bombs=3,spellCards=3;
+let enemies=[],bullets=[],enemyBullets=[],electricOrbs=[],particles=[];
+let shockwaves=[];
+let boss=null,spawnTimer=0,stageMessage=0,accumulator=0;
 let spellMessageTimer=0;
 
 const player={
- x:0,y:0,
- vx:0,vy:0,
+ x:0,y:0,vx:0,vy:0,
  lastX:0,lastY:-1,
- speed:3.6,
- radius:4,
- invincible:0,
- spellInvincible:0,
- dashCooldown:0,
- dashTime:0,
- shotTimer:0
+ speed:3.6,radius:4,
+ invincible:0,spellInvincible:0,
+ dashCooldown:0,dashTime:0,shotTimer:0
 };
 
 const keys={};
@@ -265,7 +224,7 @@ let joyActive=false;
 // キーボード
 // ===================================
 
-addEventListener("keydown",function(e){
+addEventListener("keydown",e=>{
  const k=e.key.toLowerCase();
 
  if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k)){
@@ -278,11 +237,10 @@ addEventListener("keydown",function(e){
   if(k==="z")useSpell();
   if(k==="escape")togglePause();
  }
-
  keys[k]=true;
 });
 
-addEventListener("keyup",function(e){
+addEventListener("keyup",e=>{
  keys[e.key.toLowerCase()]=false;
 });
 
@@ -311,13 +269,13 @@ function updateJoy(e){
  knob.style.top=(35+dy)+"px";
 }
 
-stick.addEventListener("pointerdown",function(e){
+stick.addEventListener("pointerdown",e=>{
  joyActive=true;
  stick.setPointerCapture(e.pointerId);
  updateJoy(e);
 });
 
-stick.addEventListener("pointermove",function(e){
+stick.addEventListener("pointermove",e=>{
  if(joyActive)updateJoy(e);
 });
 
@@ -331,24 +289,23 @@ function stopJoy(){
 stick.addEventListener("pointerup",stopJoy);
 stick.addEventListener("pointercancel",stopJoy);
 
-document.getElementById("dash").addEventListener("pointerdown",function(e){
+document.getElementById("dash").addEventListener("pointerdown",e=>{
  e.preventDefault();
  useDash();
 });
 
-document.getElementById("bomb").addEventListener("pointerdown",function(e){
+document.getElementById("bomb").addEventListener("pointerdown",e=>{
  e.preventDefault();
  useBomb();
 });
 
-document.getElementById("spellButton").addEventListener("pointerdown",function(e){
+document.getElementById("spellButton").addEventListener("pointerdown",e=>{
  e.preventDefault();
  useSpell();
 });
 
 function getInput(){
- let x=joy.x;
- let y=joy.y;
+ let x=joy.x,y=joy.y;
 
  if(keys["arrowleft"]||keys["a"])x-=1;
  if(keys["arrowright"]||keys["d"])x+=1;
@@ -357,15 +314,14 @@ function getInput(){
 
  const len=Math.hypot(x,y);
  if(len>1){x/=len;y/=len;}
-
- return {x:x,y:y};
+ return {x,y};
 }
 
 // ===================================
 // ゲーム開始
 // ===================================
 
-document.getElementById("begin").addEventListener("click",startGame);
+document.getElementById("begin").onclick=startGame;
 
 function startGame(){
  enemies=[];
@@ -373,6 +329,7 @@ function startGame(){
  enemyBullets=[];
  electricOrbs=[];
  particles=[];
+ shockwaves=[];
  boss=null;
 
  score=0;
@@ -386,6 +343,7 @@ function startGame(){
  spellMessageTimer=0;
  paused=false;
  running=true;
+ accumulator=0;
 
  player.x=W/2;
  player.y=H*.78;
@@ -401,7 +359,6 @@ function startGame(){
 
  bossbar.style.display="none";
  spell.style.display="none";
-
  overlay.classList.add("hidden");
  updateHUD();
 }
@@ -413,9 +370,7 @@ function startGame(){
 function useDash(){
  if(!running||paused||player.dashCooldown>0)return;
 
- let dx=player.lastX;
- let dy=player.lastY;
-
+ let dx=player.lastX,dy=player.lastY;
  if(Math.hypot(dx,dy)<.1)dy=-1;
 
  const len=Math.hypot(dx,dy);
@@ -448,10 +403,7 @@ function useBomb(){
  bombs--;
  enemyBullets=[];
 
- enemies.forEach(function(e){
-  e.hp-=5;
- });
-
+ enemies.forEach(e=>e.hp-=5);
  if(boss)boss.hp-=35;
 
  for(let i=0;i<70;i++){
@@ -459,12 +411,10 @@ function useBomb(){
   const s=Math.random()*8+2;
   particles.push({
    x:player.x,y:player.y,
-   vx:Math.cos(a)*s,
-   vy:Math.sin(a)*s,
+   vx:Math.cos(a)*s,vy:Math.sin(a)*s,
    life:35,color:"#a9eaff"
   });
  }
-
  updateHUD();
 }
 
@@ -477,16 +427,27 @@ function useSpell(){
 
  spellCards--;
 
- // 敵弾によるダメージを10秒間無効化
+ // 10秒間、敵弾によるダメージを無効化
  player.spellInvincible=600;
 
- // 発動メッセージ
+ // 発動文字
  spell.textContent="本能解放";
  spell.style.display="block";
  spellMessageTimer=150;
 
- // 電気の球を3発同時発射
- const angles=[-0.18,0,0.18];
+ // 波紋レーザーを発生
+ shockwaves.push({
+  x:player.x,
+  y:player.y,
+  radius:10,
+  speed:9,
+  maxRadius:Math.max(W,H)*1.2,
+  width:30,
+  hitEnemies:new Set()
+ });
+
+ // 電気を帯びた大きな球を3発発射
+ const angles=[-.2,0,.2];
 
  for(let i=0;i<3;i++){
   electricOrbs.push({
@@ -494,7 +455,7 @@ function useSpell(){
    y:player.y-30,
    vx:Math.sin(angles[i])*2.2,
    vy:-8.5,
-   radius:15,
+   radius:23,
    damage:25,
    life:180,
    dead:false
@@ -502,17 +463,14 @@ function useSpell(){
  }
 
  // 発動時の光
- for(let i=0;i<35;i++){
+ for(let i=0;i<45;i++){
   const a=Math.random()*Math.PI*2;
-  const s=Math.random()*6+2;
-
+  const s=Math.random()*7+2;
   particles.push({
-   x:player.x,
-   y:player.y,
+   x:player.x,y:player.y,
    vx:Math.cos(a)*s,
    vy:Math.sin(a)*s,
-   life:35,
-   color:"#b7a0ff"
+   life:38,color:"#b7a0ff"
   });
  }
 
@@ -520,24 +478,24 @@ function useSpell(){
 }
 
 // ===================================
-// ショットと敵弾
+// 通常ショット・敵弾
 // ===================================
 
 function shoot(){
  bullets.push({
   x:player.x-12,y:player.y-20,
-  vx:0,vy:-10,r:5,damage:1
+  vx:0,vy:-10,r:6,damage:1
  });
  bullets.push({
   x:player.x+12,y:player.y-20,
-  vx:0,vy:-10,r:5,damage:1
+  vx:0,vy:-10,r:6,damage:1
  });
 }
 
 function spawnEnemy(){
  const x=30+Math.random()*(W-60);
  enemies.push({
-  x:x,y:-25,hp:3,
+  x,y:-25,hp:3,
   vx:(Math.random()-.5)*1.5,
   vy:1.2+Math.random(),
   timer:0
@@ -545,7 +503,7 @@ function spawnEnemy(){
 }
 
 function spawnEnemyBullet(x,y,vx,vy,color="#ff6688",r=5){
- enemyBullets.push({x:x,y:y,vx:vx,vy:vy,r:r,color:color});
+ enemyBullets.push({x,y,vx,vy,r,color});
 }
 
 function aimedBullet(x,y,speed,offset=0){
@@ -588,16 +546,10 @@ function bossAttack(){
  const speed=difficulty===0?1.7:difficulty===1?2.3:2.9;
 
  if(stage===1){
-  if(t%65===0){
-   circlePattern(boss.x,boss.y+20,14,speed,t*.025,"#72dfff");
-  }
-  if(t%32===0){
-   aimedBullet(boss.x,boss.y+20,speed+1);
-  }
+  if(t%65===0)circlePattern(boss.x,boss.y+20,14,speed,t*.025,"#72dfff");
+  if(t%32===0)aimedBullet(boss.x,boss.y+20,speed+1);
  }else{
-  if(t%45===0){
-   circlePattern(boss.x,boss.y+20,20,speed,t*.04,"#7aafff");
-  }
+  if(t%45===0)circlePattern(boss.x,boss.y+20,20,speed,t*.04,"#7aafff");
   if(t%22===0){
    aimedBullet(boss.x-25,boss.y+15,speed+1,-.16);
    aimedBullet(boss.x+25,boss.y+15,speed+1,.16);
@@ -611,12 +563,12 @@ function bossAttack(){
 
 function nextStage(){
  stage++;
-
  boss=null;
  enemies=[];
  enemyBullets=[];
  bullets=[];
  electricOrbs=[];
+ shockwaves=[];
 
  bossbar.style.display="none";
  spell.style.display="none";
@@ -629,9 +581,7 @@ function nextStage(){
  spawnTimer=0;
  stageMessage=180;
 
- if(stage>2){
-  clearGame();
- }
+ if(stage>2)clearGame();
 }
 
 function clearGame(){
@@ -647,12 +597,11 @@ function clearGame(){
  document.getElementById("highscore").textContent="HIGH SCORE : "+highscore;
  document.getElementById("resultTitle").textContent="ALL STAGE CLEAR!";
  document.getElementById("resultText").textContent="SCORE : "+score;
-
  showPanel(result);
 }
 
 // ===================================
-// 衝突判定
+// 衝突判定・ダメージ
 // ===================================
 
 function hit(a,b,r){
@@ -686,17 +635,16 @@ function endGame(){
  document.getElementById("highscore").textContent="HIGH SCORE : "+highscore;
  document.getElementById("resultTitle").textContent="GAME OVER";
  document.getElementById("resultText").textContent="SCORE : "+score;
-
  showPanel(result);
 }
 
-document.getElementById("retry").addEventListener("click",startGame);
+document.getElementById("retry").onclick=startGame;
 
-document.getElementById("titleButton").addEventListener("click",function(){
+document.getElementById("titleButton").onclick=()=>{
  running=false;
  paused=false;
  showTitle();
-});
+};
 
 // ===================================
 // ポーズ
@@ -704,26 +652,22 @@ document.getElementById("titleButton").addEventListener("click",function(){
 
 function togglePause(){
  if(!running)return;
-
  paused=!paused;
 
- if(paused){
-  showPanel(pauseMenu);
- }else{
-  overlay.classList.add("hidden");
- }
+ if(paused)showPanel(pauseMenu);
+ else overlay.classList.add("hidden");
 }
 
-document.getElementById("resume").addEventListener("click",function(){
+document.getElementById("resume").onclick=()=>{
  paused=false;
  overlay.classList.add("hidden");
-});
+};
 
-document.getElementById("quit").addEventListener("click",function(){
+document.getElementById("quit").onclick=()=>{
  running=false;
  paused=false;
  showTitle();
-});
+};
 
 // ===================================
 // HUD
@@ -737,6 +681,10 @@ function updateHUD(){
  document.getElementById("spellCount").textContent="SPELL : "+spellCards;
  document.getElementById("spellButton").innerHTML="SPELL<br><small>Z / "+spellCards+"</small>";
  document.getElementById("stage").textContent="STAGE : "+stage;
+
+ document.getElementById("protection").textContent=
+  player.spellInvincible>0?
+  "本能解放 防御残り："+(player.spellInvincible/60).toFixed(1)+"秒":"";
 }
 
 // ===================================
@@ -768,12 +716,8 @@ function update(){
   }
  }
 
- // 自機画像の大きさを考慮して画面内に制限
- const playerHalfW=24;
- const playerHalfH=44;
-
- player.x=Math.max(playerHalfW,Math.min(W-playerHalfW,player.x));
- player.y=Math.max(playerHalfH,Math.min(H-playerHalfH,player.y));
+ player.x=Math.max(24,Math.min(W-24,player.x));
+ player.y=Math.max(44,Math.min(H-44,player.y));
 
  if(player.invincible>0)player.invincible--;
  if(player.spellInvincible>0)player.spellInvincible--;
@@ -781,9 +725,7 @@ function update(){
 
  if(spellMessageTimer>0){
   spellMessageTimer--;
-  if(spellMessageTimer===0){
-   spell.style.display="none";
-  }
+  if(spellMessageTimer===0)spell.style.display="none";
  }
 
  player.shotTimer++;
@@ -804,15 +746,11 @@ function update(){
   e.y+=e.vy;
   e.timer++;
 
-  if(e.timer%85===0){
-   aimedBullet(e.x,e.y,2.3);
-  }
+  if(e.timer%85===0)aimedBullet(e.x,e.y,2.3);
  }
 
  // ボス登場
- if(frame>1250&&!boss){
-  createBoss();
- }
+ if(frame>1250&&!boss)createBoss();
 
  // ボス攻撃
  if(boss){
@@ -866,7 +804,6 @@ function update(){
   orb.y+=orb.vy;
   orb.life--;
 
-  // 敵に当たるとダメージ
   for(const e of enemies){
    if(!orb.dead&&hit(orb,e,orb.radius+14)){
     e.hp-=orb.damage;
@@ -875,7 +812,6 @@ function update(){
    }
   }
 
-  // ボスに当たると大ダメージ
   if(!orb.dead&&boss&&hit(orb,boss,orb.radius+37)){
    boss.hp-=orb.damage;
    orb.dead=true;
@@ -884,8 +820,34 @@ function update(){
 
   if(orb.life<=0||orb.y<-40)orb.dead=true;
  }
+ electricOrbs=electricOrbs.filter(o=>!o.dead);
 
- electricOrbs=electricOrbs.filter(orb=>!orb.dead);
+ // =================================
+ // 波紋レーザーの更新・敵撃破
+ // =================================
+
+ for(const wave of shockwaves){
+  const oldRadius=wave.radius;
+  wave.radius+=wave.speed;
+
+  for(const e of enemies){
+   if(wave.hitEnemies.has(e))continue;
+
+   const distance=Math.hypot(e.x-wave.x,e.y-wave.y);
+
+   // 波紋の輪が敵に触れた瞬間に撃破
+   if(
+    distance>=oldRadius-wave.width/2-14 &&
+    distance<=wave.radius+wave.width/2+14
+   ){
+    e.hp=0;
+    wave.hitEnemies.add(e);
+    score+=100;
+   }
+  }
+ }
+
+ shockwaves=shockwaves.filter(w=>w.radius<w.maxRadius);
 
  // 敵弾
  for(const b of enemyBullets){
@@ -902,9 +864,9 @@ function update(){
   }
  }
 
- enemyBullets=enemyBullets.filter(function(b){
-  return !b.dead&&b.x>-30&&b.x<W+30&&b.y>-30&&b.y<H+30;
- });
+ enemyBullets=enemyBullets.filter(b=>
+  !b.dead&&b.x>-30&&b.x<W+30&&b.y>-30&&b.y<H+30
+ );
 
  // 敵との接触
  for(const e of enemies){
@@ -919,7 +881,7 @@ function update(){
 
  // 敵撃破
  for(const e of enemies){
-  if(e.hp<=0)score+=100;
+  if(e.hp<=0)score+=0;
  }
 
  enemies=enemies.filter(e=>e.hp>0&&e.y<H+50);
@@ -941,7 +903,7 @@ function update(){
 }
 
 // ===================================
-// 背景描画
+// 背景
 // ===================================
 
 function drawBackground(){
@@ -967,7 +929,7 @@ function drawBackground(){
 }
 
 // ===================================
-// 自機描画
+// 自機
 // ===================================
 
 function drawPlayer(){
@@ -985,17 +947,12 @@ function drawPlayer(){
  if(spriteReady){
   const sw=spriteCanvas.width;
   const sh=spriteCanvas.height;
-
-  const maxWidth=48;
-  const maxHeight=88;
-  const scale=Math.min(maxWidth/sw,maxHeight/sh);
-
+  const scale=Math.min(48/sw,88/sh);
   const drawW=sw*scale;
   const drawH=sh*scale;
 
   ctx.drawImage(
-   spriteCanvas,
-   0,0,sw,sh,
+   spriteCanvas,0,0,sw,sh,
    player.x-drawW/2,
    player.y-drawH/2,
    drawW,drawH
@@ -1009,7 +966,6 @@ function drawPlayer(){
 
  ctx.restore();
 
- // 当たり判定の目印
  ctx.beginPath();
  ctx.arc(player.x,player.y,player.radius,0,Math.PI*2);
  ctx.fillStyle="#ffffff";
@@ -1022,7 +978,6 @@ function drawPlayer(){
   ctx.stroke();
  }
 
- // スペルカード中の保護リング
  if(player.spellInvincible>0){
   ctx.save();
   ctx.beginPath();
@@ -1037,19 +992,34 @@ function drawPlayer(){
 }
 
 // ===================================
-// 電気の球の描画
+// 通常弾：菱形
+// ===================================
+
+function drawPlayerBullets(){
+ for(const b of bullets){
+  ctx.save();
+  ctx.translate(b.x,b.y);
+  ctx.rotate(Math.PI/4);
+  ctx.fillStyle="#a8eeff";
+  ctx.shadowColor="#72dfff";
+  ctx.shadowBlur=8;
+  ctx.fillRect(-4,-4,8,8);
+  ctx.restore();
+ }
+}
+
+// ===================================
+// 電気の球
 // ===================================
 
 function drawElectricOrbs(){
  for(const orb of electricOrbs){
   ctx.save();
-
-  // 外側の電気の光
   ctx.shadowColor="#62dfff";
-  ctx.shadowBlur=25;
+  ctx.shadowBlur=30;
 
   const gradient=ctx.createRadialGradient(
-   orb.x-4,orb.y-5,2,
+   orb.x-6,orb.y-7,2,
    orb.x,orb.y,orb.radius
   );
 
@@ -1063,14 +1033,13 @@ function drawElectricOrbs(){
   ctx.arc(orb.x,orb.y,orb.radius,0,Math.PI*2);
   ctx.fill();
 
-  // 電気のギザギザ
-  ctx.shadowColor="#a9f5ff";
-  ctx.shadowBlur=15;
   ctx.strokeStyle="#e6ffff";
-  ctx.lineWidth=2.5;
+  ctx.lineWidth=3;
+  ctx.shadowColor="#a9f5ff";
+  ctx.shadowBlur=18;
 
-  for(let j=0;j<3;j++){
-   const a=frame*.12+j*2.1;
+  for(let j=0;j<4;j++){
+   const a=frame*.12+j*1.6;
    const x1=orb.x+Math.cos(a)*orb.radius*.7;
    const y1=orb.y+Math.sin(a)*orb.radius*.7;
    const x2=orb.x+Math.cos(a+.7)*orb.radius*1.5;
@@ -1079,10 +1048,7 @@ function drawElectricOrbs(){
    ctx.beginPath();
    ctx.moveTo(x1,y1);
    ctx.lineTo(x2,y2);
-   ctx.lineTo(
-    x2+Math.cos(a+1.4)*5,
-    y2+Math.sin(a+1.4)*5
-   );
+   ctx.lineTo(x2+Math.cos(a+1.4)*7,y2+Math.sin(a+1.4)*7);
    ctx.stroke();
   }
 
@@ -1091,17 +1057,50 @@ function drawElectricOrbs(){
 }
 
 // ===================================
-// 弾描画
+// 波紋レーザー
 // ===================================
 
-function drawBullets(){
- for(const b of bullets){
-  ctx.fillStyle="#a8eeff";
-  ctx.beginPath();
-  ctx.ellipse(b.x,b.y,4,9,0,0,Math.PI*2);
-  ctx.fill();
- }
+function drawShockwaves(){
+ for(const wave of shockwaves){
+  ctx.save();
 
+  // 外側の光
+  ctx.beginPath();
+  ctx.arc(wave.x,wave.y,wave.radius,0,Math.PI*2);
+  ctx.strokeStyle="#8c65ff";
+  ctx.lineWidth=wave.width+12;
+  ctx.globalAlpha=.22;
+  ctx.shadowColor="#a77bff";
+  ctx.shadowBlur=30;
+  ctx.stroke();
+
+  // 中心のレーザー輪
+  ctx.beginPath();
+  ctx.arc(wave.x,wave.y,wave.radius,0,Math.PI*2);
+  ctx.globalAlpha=.95;
+  ctx.strokeStyle="#e6dcff";
+  ctx.lineWidth=wave.width;
+  ctx.shadowColor="#b58aff";
+  ctx.shadowBlur=24;
+  ctx.stroke();
+
+  // 内側の白い光
+  ctx.beginPath();
+  ctx.arc(wave.x,wave.y,wave.radius,0,Math.PI*2);
+  ctx.strokeStyle="#ffffff";
+  ctx.lineWidth=4;
+  ctx.globalAlpha=1;
+  ctx.stroke();
+
+  ctx.restore();
+ }
+}
+
+// ===================================
+// 敵・敵弾・ボス
+// ===================================
+
+function drawEnemyBullets(){
  for(const b of enemyBullets){
   ctx.fillStyle=b.color;
   ctx.beginPath();
@@ -1141,7 +1140,6 @@ function drawBoss(){
  ctx.beginPath();
  ctx.arc(boss.x,boss.y,12,0,Math.PI*2);
  ctx.fill();
-
  ctx.restore();
 }
 
@@ -1165,22 +1163,25 @@ function drawStageMessage(){
  ctx.font="bold 28px sans-serif";
  ctx.shadowColor="#168bdc";
  ctx.shadowBlur=15;
-
  ctx.fillText("STAGE "+stage,W/2,H*.42);
 
  ctx.font="16px sans-serif";
- ctx.fillText(
-  stage===1?"氷の守護者":"蒼氷の世界",
-  W/2,H*.42+35
- );
-
+ ctx.fillText(stage===1?"氷の守護者":"蒼氷の世界",W/2,H*.42+35);
  ctx.restore();
 }
 
+// ===================================
+// 描画
+// ===================================
+
 function draw(){
  drawBackground();
- drawBullets();
+
+ drawPlayerBullets();
+ drawEnemyBullets();
  drawElectricOrbs();
+ drawShockwaves();
+
  drawEnemies();
  drawBoss();
  drawParticles();
@@ -1213,7 +1214,6 @@ function loop(time){
 
  if(running&&!paused){
   accumulator+=delta;
-
   while(accumulator>=1){
    update();
    accumulator--;
